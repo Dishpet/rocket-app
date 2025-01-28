@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const Auth = () => {
@@ -13,11 +13,25 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
+  const [lastAttempt, setLastAttempt] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent rapid signup attempts
+    const now = Date.now();
+    if (now - lastAttempt < 1000) { // 1 second cooldown
+      toast({
+        title: "Please wait",
+        description: "For security purposes, please wait a moment before trying again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setLastAttempt(now);
+    
     setIsLoading(true);
 
     try {
@@ -33,7 +47,12 @@ const Auth = () => {
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          if (signUpError.message.includes('rate_limit')) {
+            throw new Error("Please wait a moment before trying again.");
+          }
+          throw signUpError;
+        }
 
         // Create profile after successful signup
         const { error: profileError } = await supabase
@@ -58,7 +77,12 @@ const Auth = () => {
           password,
         });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          if (signInError.message.includes('rate_limit')) {
+            throw new Error("Please wait a moment before trying again.");
+          }
+          throw signInError;
+        }
 
         navigate("/");
       }
