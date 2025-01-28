@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const TopNav = () => {
   const { profile } = useAuth();
@@ -45,16 +45,24 @@ const TopNav = () => {
             <span className="absolute top-1 right-1 w-2 h-2 bg-rfa-red rounded-full"></span>
           </button>
           
-          <Avatar className="w-8 h-8">
-            <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
-            <AvatarFallback>{profile?.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-          </Avatar>
+          <button onClick={() => navigate(`/profile`)} className="focus:outline-none">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
+              <AvatarFallback>{profile?.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+            </Avatar>
+          </button>
           
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none">
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-rfa-gray border-rfa-gray-light">
+              <DropdownMenuItem 
+                onClick={() => navigate(`/profile`)}
+                className="text-gray-200 hover:text-white focus:text-white cursor-pointer"
+              >
+                Profile
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleLogout}
                 className="text-gray-200 hover:text-white focus:text-white cursor-pointer"
