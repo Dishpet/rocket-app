@@ -30,11 +30,13 @@ const Profile = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      if (data) {
-        setUsername(data.username);
-        setFullName(data.full_name || "");
-      }
+    meta: {
+      onSuccess: (data) => {
+        if (data) {
+          setUsername(data.username);
+          setFullName(data.full_name || "");
+        }
+      },
     },
   });
 
