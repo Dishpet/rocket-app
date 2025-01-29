@@ -29,8 +29,13 @@ const Index = () => {
       const { data, error } = await supabase
         .from("posts")
         .select(`
-          *,
-          profiles:profiles(username, avatar_url),
+          id,
+          content,
+          author_id,
+          created_at,
+          updated_at,
+          is_academy_post,
+          profiles!inner(username, avatar_url),
           likes(count),
           comments(count)
         `)
