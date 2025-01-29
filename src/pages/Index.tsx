@@ -6,6 +6,13 @@ import { ImagePlus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
+
+type PostWithRelations = Tables<"posts"> & {
+  author: Pick<Tables<"profiles">, "username" | "avatar_url"> | null;
+  likes: { count: number }[];
+  comments: { count: number }[];
+};
 
 const Index = () => {
   const [newPost, setNewPost] = useState("");
@@ -24,7 +31,7 @@ const Index = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as PostWithRelations[];
     },
   });
 
