@@ -2,28 +2,42 @@ import MainLayout from "@/components/layout/MainLayout";
 import Post from "@/components/feed/Post";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [newPost, setNewPost] = useState("");
 
-  const dummyPosts = [
-    {
-      author: "Ivan Rakitic",
-      content: "Welcome to the Rocket Football Academy community! We're excited to have you here. Stay tuned for updates and announcements.",
-      timestamp: "2 hours ago",
-      likes: 42,
-      comments: 8,
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          author:profiles(username, avatar_url),
+          likes(count),
+          comments(count)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
     },
-    {
-      author: "Coach Sarah",
-      content: "Great training session today! Remember to stay hydrated and get enough rest before tomorrow's practice.",
-      timestamp: "5 hours ago",
-      likes: 24,
-      comments: 3,
-    },
-  ];
+  });
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-rfa-red" />
+          <p className="text-gray-400">Loading posts...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -43,9 +57,22 @@ const Index = () => {
           </div>
         </div>
 
-        {dummyPosts.map((post, index) => (
-          <Post key={index} {...post} />
+        {posts?.map((post) => (
+          <Post
+            key={post.id}
+            author={post.author?.username || "Unknown"}
+            content={post.content}
+            timestamp={new Date(post.created_at).toLocaleString()}
+            likes={post.likes?.[0]?.count || 0}
+            comments={post.comments?.[0]?.count || 0}
+          />
         ))}
+
+        {posts?.length === 0 && (
+          <div className="text-center text-gray-400 py-8">
+            No posts yet. Be the first to share something!
+          </div>
+        )}
       </div>
     </MainLayout>
   );
