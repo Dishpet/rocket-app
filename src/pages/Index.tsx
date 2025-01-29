@@ -8,7 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
-type PostWithRelations = Tables<"posts"> & {
+type PostWithRelations = {
+  id: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+  updated_at: string;
+  is_academy_post: boolean | null;
   profiles: Pick<Tables<"profiles">, "username" | "avatar_url"> | null;
   likes: { count: number }[];
   comments: { count: number }[];
@@ -24,7 +30,7 @@ const Index = () => {
         .from("posts")
         .select(`
           *,
-          profiles!posts_author_id_fkey(username, avatar_url),
+          profiles:profiles(username, avatar_url),
           likes(count),
           comments(count)
         `)
