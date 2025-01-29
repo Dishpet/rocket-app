@@ -28,15 +28,11 @@ const Index = () => {
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
+      console.log("Fetching posts...");
       const { data, error } = await supabase
         .from("posts")
         .select(`
-          id,
-          content,
-          author_id,
-          created_at,
-          updated_at,
-          is_academy_post,
+          *,
           profiles (
             username,
             avatar_url
@@ -51,6 +47,8 @@ const Index = () => {
         throw error;
       }
 
+      console.log("Posts data:", data);
+      
       if (!data) return [];
 
       return data.map(post => ({
@@ -61,6 +59,7 @@ const Index = () => {
   });
 
   if (error) {
+    console.error("Query error:", error);
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -71,6 +70,7 @@ const Index = () => {
   }
 
   if (isLoading) {
+    console.log("Loading state active");
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -80,6 +80,8 @@ const Index = () => {
       </MainLayout>
     );
   }
+
+  console.log("Rendering posts:", posts);
 
   return (
     <MainLayout>
@@ -99,7 +101,7 @@ const Index = () => {
           </div>
         </div>
 
-        {posts && posts.length > 0 ? (
+        {Array.isArray(posts) && posts.length > 0 ? (
           posts.map((post) => (
             <Post
               key={post.id}
