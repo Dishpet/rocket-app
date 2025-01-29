@@ -15,7 +15,10 @@ type PostWithRelations = {
   created_at: string;
   updated_at: string;
   is_academy_post: boolean | null;
-  profiles: Pick<Tables<"profiles">, "username" | "avatar_url">;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  };
   likes: { count: number }[];
   comments: { count: number }[];
 };
@@ -35,7 +38,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!author_id(username, avatar_url),
+          profiles!inner(username, avatar_url),
           likes(count),
           comments(count)
         `)
@@ -78,11 +81,11 @@ const Index = () => {
         {posts?.map((post) => (
           <Post
             key={post.id}
-            author={post.profiles?.username || "Unknown"}
+            author={post.profiles.username}
             content={post.content}
             timestamp={new Date(post.created_at).toLocaleString()}
-            likes={post.likes?.[0]?.count || 0}
-            comments={post.comments?.[0]?.count || 0}
+            likes={post.likes[0]?.count || 0}
+            comments={post.comments[0]?.count || 0}
           />
         ))}
 
