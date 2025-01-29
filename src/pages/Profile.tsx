@@ -18,7 +18,7 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const { toast } = useToast();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ["profile", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -28,14 +28,15 @@ const Profile = () => {
         .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        throw new Error("Profile not found");
+      }
       return data;
     },
     meta: {
       onSuccess: (data) => {
-        if (data) {
-          setUsername(data.username);
-          setFullName(data.full_name || "");
-        }
+        setUsername(data.username);
+        setFullName(data.full_name || "");
       },
     },
   });
@@ -117,6 +118,28 @@ const Profile = () => {
       <MainLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <p className="text-lg text-red-500">
+            {error instanceof Error ? error.message : "Failed to load profile"}
+          </p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <p className="text-lg">Profile not found</p>
         </div>
       </MainLayout>
     );
