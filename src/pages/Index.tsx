@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
 type PostWithRelations = Tables<"posts"> & {
-  author: Pick<Tables<"profiles">, "username" | "avatar_url"> | null;
+  profiles: Pick<Tables<"profiles">, "username" | "avatar_url"> | null;
   likes: { count: number }[];
   comments: { count: number }[];
 };
@@ -24,7 +24,7 @@ const Index = () => {
         .from("posts")
         .select(`
           *,
-          author:profiles(username, avatar_url),
+          profiles!posts_author_id_fkey(username, avatar_url),
           likes(count),
           comments(count)
         `)
@@ -67,7 +67,7 @@ const Index = () => {
         {posts?.map((post) => (
           <Post
             key={post.id}
-            author={post.author?.username || "Unknown"}
+            author={post.profiles?.username || "Unknown"}
             content={post.content}
             timestamp={new Date(post.created_at).toLocaleString()}
             likes={post.likes?.[0]?.count || 0}
