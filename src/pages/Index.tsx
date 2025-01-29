@@ -6,7 +6,6 @@ import { ImagePlus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 
 type PostWithRelations = {
   id: string;
@@ -38,7 +37,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!posts_author_id_fkey(username, avatar_url),
+          profiles (username, avatar_url),
           likes(count),
           comments(count)
         `)
