@@ -22,6 +22,14 @@ type PostWithRelations = {
   comments: { count: number }[];
 };
 
+// Type for the raw data from Supabase
+type RawPostData = Omit<PostWithRelations, 'profiles'> & {
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  }[];
+};
+
 const Index = () => {
   const [newPost, setNewPost] = useState("");
 
@@ -49,7 +57,7 @@ const Index = () => {
       if (error) throw error;
       
       // Transform the data to match the expected type
-      const transformedData = data?.map(post => ({
+      const transformedData = (data as RawPostData[])?.map(post => ({
         ...post,
         profiles: post.profiles[0] // Get the first profile since it's returning an array
       }));
