@@ -37,7 +37,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!author_id (
+          profiles (
             username,
             avatar_url
           ),
@@ -47,7 +47,14 @@ const Index = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as PostWithRelations[];
+      
+      // Transform the data to match the expected type
+      const transformedData = data?.map(post => ({
+        ...post,
+        profiles: post.profiles[0] // Get the first profile since it's returning an array
+      }));
+
+      return transformedData as PostWithRelations[];
     },
   });
 
