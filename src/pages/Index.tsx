@@ -22,14 +22,6 @@ type PostWithRelations = {
   comments: { count: number }[];
 };
 
-// Type for the raw data from Supabase
-type RawPostData = Omit<PostWithRelations, 'profiles'> & {
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-  }[];
-};
-
 const Index = () => {
   const [newPost, setNewPost] = useState("");
 
@@ -45,7 +37,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!author_id (
+          profiles!inner (
             username,
             avatar_url
           ),
@@ -55,14 +47,12 @@ const Index = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
-      // Transform the data to match the expected type
-      const transformedData = (data as RawPostData[])?.map(post => ({
+
+      // Transform the data to match our expected type
+      return (data as any[]).map(post => ({
         ...post,
         profiles: post.profiles[0] // Get the first profile since it's returning an array
-      }));
-
-      return transformedData as PostWithRelations[];
+      })) as PostWithRelations[];
     },
   });
 
