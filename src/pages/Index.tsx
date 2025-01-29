@@ -15,7 +15,7 @@ type PostWithRelations = {
   created_at: string;
   updated_at: string;
   is_academy_post: boolean | null;
-  profiles: Pick<Tables<"profiles">, "username" | "avatar_url"> | null;
+  profiles: Pick<Tables<"profiles">, "username" | "avatar_url">;
   likes: { count: number }[];
   comments: { count: number }[];
 };
@@ -35,7 +35,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!inner(username, avatar_url),
+          profiles!posts_author_id_fkey(username, avatar_url),
           likes(count),
           comments(count)
         `)
