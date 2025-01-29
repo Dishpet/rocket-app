@@ -25,7 +25,7 @@ type PostWithRelations = {
 const Index = () => {
   const [newPost, setNewPost] = useState("");
 
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, error } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,15 +46,29 @@ const Index = () => {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching posts:", error);
+        throw error;
+      }
 
-      // Transform the data to match our expected type
+      if (!data) return [];
+
       return data.map(post => ({
         ...post,
         profiles: post.profiles || { username: 'Unknown', avatar_url: null }
       })) as PostWithRelations[];
     },
   });
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <p className="text-red-500">Error loading posts. Please try again later.</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -85,18 +99,18 @@ const Index = () => {
           </div>
         </div>
 
-        {posts?.map((post) => (
-          <Post
-            key={post.id}
-            author={post.profiles.username}
-            content={post.content}
-            timestamp={new Date(post.created_at).toLocaleString()}
-            likes={post.likes[0]?.count || 0}
-            comments={post.comments[0]?.count || 0}
-          />
-        ))}
-
-        {posts?.length === 0 && (
+        {posts && posts.length > 0 ? (
+          posts.map((post) => (
+            <Post
+              key={post.id}
+              author={post.profiles.username}
+              content={post.content}
+              timestamp={new Date(post.created_at).toLocaleString()}
+              likes={post.likes[0]?.count || 0}
+              comments={post.comments[0]?.count || 0}
+            />
+          ))
+        ) : (
           <div className="text-center text-gray-400 py-8">
             No posts yet. Be the first to share something!
           </div>
