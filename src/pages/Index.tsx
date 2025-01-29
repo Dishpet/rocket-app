@@ -37,7 +37,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!inner (
+          profiles (
             username,
             avatar_url
           ),
@@ -49,9 +49,9 @@ const Index = () => {
       if (error) throw error;
 
       // Transform the data to match our expected type
-      return (data as any[]).map(post => ({
+      return data.map(post => ({
         ...post,
-        profiles: post.profiles[0] // Get the first profile since it's returning an array
+        profiles: post.profiles || { username: 'Unknown', avatar_url: null }
       })) as PostWithRelations[];
     },
   });
