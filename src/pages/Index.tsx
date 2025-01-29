@@ -38,7 +38,7 @@ const Index = () => {
           created_at,
           updated_at,
           is_academy_post,
-          profiles!posts_author_id_fkey(username, avatar_url),
+          profiles (username, avatar_url),
           likes(count),
           comments(count)
         `)
