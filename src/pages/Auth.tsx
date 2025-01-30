@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,11 @@ const Auth = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // If user is already logged in, redirect to home
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,8 +95,6 @@ const Auth = () => {
           }
           throw signInError;
         }
-
-        navigate("/");
       }
     } catch (error: any) {
       toast({
@@ -108,6 +106,11 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  // Don't show the auth form while checking the session
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-rfa-dark flex items-center justify-center p-4">
