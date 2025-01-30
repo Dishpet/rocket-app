@@ -17,13 +17,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-rfa-dark flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-rfa-red border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-white text-sm">Loading...</div>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

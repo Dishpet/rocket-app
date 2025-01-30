@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,16 +19,15 @@ const Auth = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // If user is already logged in, redirect to home
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prevent rapid signup attempts
     const now = Date.now();
     if (now - lastAttempt < 1000) {
       toast({
@@ -84,8 +83,6 @@ const Auth = () => {
         });
 
         if (signInError) throw signInError;
-        
-        // The navigation will be handled by the auth state change in AuthContext
       }
     } catch (error: any) {
       console.error("Auth error:", error);
@@ -98,6 +95,10 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-rfa-dark flex items-center justify-center p-4">
