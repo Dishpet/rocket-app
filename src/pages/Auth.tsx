@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +17,13 @@ const Auth = () => {
   const [lastAttempt, setLastAttempt] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // If user is already logged in, redirect to home
+  if (user) {
+    navigate("/");
+    return null;
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +62,16 @@ const Auth = () => {
           throw signUpError;
         }
 
+        if (!signUpData.user) {
+          throw new Error("No user data returned from signup");
+        }
+
         // Create profile after successful signup
         const { error: profileError } = await supabase
           .from("profiles")
           .insert([
             {
-              id: signUpData.user?.id,
+              id: signUpData.user.id,
               username,
               full_name: fullName,
             },
