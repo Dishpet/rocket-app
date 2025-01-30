@@ -39,17 +39,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initialize = async () => {
       try {
-        // Get initial session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
-        
+
         if (session?.user) {
           setUser(session.user);
           await fetchProfile(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -62,7 +58,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initialize();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
@@ -74,7 +69,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setProfile(null);
         }
-        setIsLoading(false);
+
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     );
 
