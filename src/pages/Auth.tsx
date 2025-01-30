@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,18 +19,18 @@ const Auth = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
+  // If user is already logged in, redirect to home
+  if (user) {
+    navigate("/");
+    return null;
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Prevent rapid signup attempts
     const now = Date.now();
-    if (now - lastAttempt < 1000) { // 1 second cooldown
+    if (now - lastAttempt < 1000) {
       toast({
         title: "Please wait",
         description: "For security purposes, please wait a moment before trying again.",
@@ -55,18 +55,12 @@ const Auth = () => {
           },
         });
 
-        if (signUpError) {
-          if (signUpError.message.includes('rate_limit')) {
-            throw new Error("Please wait a moment before trying again.");
-          }
-          throw signUpError;
-        }
+        if (signUpError) throw signUpError;
 
         if (!signUpData.user) {
           throw new Error("No user data returned from signup");
         }
 
-        // Create profile after successful signup
         const { error: profileError } = await supabase
           .from("profiles")
           .insert([
@@ -89,14 +83,12 @@ const Auth = () => {
           password,
         });
 
-        if (signInError) {
-          if (signInError.message.includes('rate_limit')) {
-            throw new Error("Please wait a moment before trying again.");
-          }
-          throw signInError;
-        }
+        if (signInError) throw signInError;
+        
+        // The navigation will be handled by the auth state change in AuthContext
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -106,11 +98,6 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
-  // Don't show the auth form while checking the session
-  if (user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-rfa-dark flex items-center justify-center p-4">
