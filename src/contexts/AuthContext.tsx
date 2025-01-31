@@ -35,25 +35,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    let mounted = true;
-
     const initialize = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (!mounted) return;
-
         if (session?.user) {
           setUser(session.user);
           await fetchProfile(session.user.id);
+        } else {
+          setUser(null);
+          setProfile(null);
         }
-        
-        setIsLoading(false);
       } catch (error) {
         console.error("Error initializing auth:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -61,8 +57,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (!mounted) return;
-
         if (session?.user) {
           setUser(session.user);
           await fetchProfile(session.user.id);
@@ -74,7 +68,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
