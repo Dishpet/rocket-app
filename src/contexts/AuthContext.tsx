@@ -47,9 +47,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(session.user);
           await fetchProfile(session.user.id);
         }
+        
+        setIsLoading(false);
       } catch (error) {
         console.error("Error initializing auth:", error);
-      } finally {
         if (mounted) {
           setIsLoading(false);
         }
@@ -68,10 +69,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           setUser(null);
           setProfile(null);
-        }
-
-        if (mounted) {
-          setIsLoading(false);
         }
       }
     );
