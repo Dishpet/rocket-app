@@ -89,9 +89,26 @@ const Index = () => {
     }
 
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create a post",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("posts")
-        .insert([{ content: newPost.trim() }]);
+        .insert({
+          content: newPost.trim(),
+          author_id: user.id,
+        });
 
       if (error) throw error;
 
