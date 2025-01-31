@@ -25,20 +25,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+      if (data) setProfile(data);
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
   };
 
   useEffect(() => {
-    // Immediately set up auth state listener
+    let mounted = true;
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        console.log("Auth state changed:", session ? "logged in" : "logged out");
+        console.log("Auth state changed:", _event, session ? "logged in" : "logged out");
+        
+        if (!mounted) return;
+
         if (session?.user) {
           setUser(session.user);
           await fetchProfile(session.user.id);
@@ -51,16 +56,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session ? "session found" : "no session");
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session check:", session ? "session found" : "no session");
+
+        if (!mounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error("Error during initialization:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
