@@ -15,6 +15,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
+    console.log("Protected route loading...");
     return (
       <div className="min-h-screen bg-rfa-dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
@@ -25,6 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  console.log("Protected route auth state:", user ? "authenticated" : "not authenticated");
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
