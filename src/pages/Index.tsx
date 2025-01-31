@@ -3,9 +3,10 @@ import Post from "@/components/feed/Post";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImagePlus, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type PostWithRelations = {
   id: string;
@@ -24,53 +25,108 @@ type PostWithRelations = {
 
 const Index = () => {
   const [newPost, setNewPost] = useState("");
+  const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
-      console.log("Fetching posts...");
-      const { data, error } = await supabase
-        .from("posts")
-        .select(`
-          *,
-          profiles (
-            username,
-            avatar_url
-          ),
-          likes(count),
-          comments(count)
-        `)
-        .order("created_at", { ascending: false });
+      try {
+        console.log("Fetching posts...");
+        const { data, error } = await supabase
+          .from("posts")
+          .select(`
+            *,
+            profiles (
+              username,
+              avatar_url
+            ),
+            likes(count),
+            comments(count)
+          `)
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching posts:", error);
+        if (error) {
+          console.error("Error fetching posts:", error);
+          if (mounted) {
+            toast({
+              title: "Error",
+              description: "Failed to load posts. Please try again.",
+              variant: "destructive",
+            });
+          }
+          throw error;
+        }
+
+        if (!data) return [];
+
+        return data.map(post => ({
+          ...post,
+          profiles: post.profiles || { username: 'Unknown', avatar_url: null }
+        })) as PostWithRelations[];
+      } catch (error) {
+        console.error("Query error:", error);
         throw error;
       }
-
-      console.log("Posts data:", data);
-      
-      if (!data) return [];
-
-      return data.map(post => ({
-        ...post,
-        profiles: post.profiles || { username: 'Unknown', avatar_url: null }
-      })) as PostWithRelations[];
     },
+    retry: 1,
+    staleTime: 30000,
   });
 
+  const handleNewPost = async () => {
+    if (!newPost.trim()) {
+      toast({
+        title: "Error",
+        description: "Post content cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .insert([{ content: newPost.trim() }]);
+
+      if (error) throw error;
+
+      setNewPost("");
+      toast({
+        title: "Success",
+        description: "Post created successfully",
+      });
+    } catch (error: any) {
+      console.error("Error creating post:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create post",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (error) {
-    console.error("Query error:", error);
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
           <p className="text-red-500">Error loading posts. Please try again later.</p>
+          <Button 
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
         </div>
       </MainLayout>
     );
   }
 
   if (isLoading) {
-    console.log("Loading state active");
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -80,8 +136,6 @@ const Index = () => {
       </MainLayout>
     );
   }
-
-  console.log("Rendering posts:", posts);
 
   return (
     <MainLayout>
@@ -97,7 +151,12 @@ const Index = () => {
             <button className="text-gray-400 hover:text-gray-200 transition-colors">
               <ImagePlus className="w-6 h-6" />
             </button>
-            <Button className="bg-rfa-red hover:bg-rfa-red/90">Post</Button>
+            <Button 
+              className="bg-rfa-red hover:bg-rfa-red/90"
+              onClick={handleNewPost}
+            >
+              Post
+            </Button>
           </div>
         </div>
 
