@@ -29,37 +29,50 @@ const Index = () => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log("Index component mounted");
     setMounted(true);
-    return () => setMounted(false);
+    return () => {
+      console.log("Index component unmounting");
+      setMounted(false);
+    };
   }, []);
 
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
       try {
-        console.log("Fetching posts...");
+        console.log("Starting posts fetch...");
         const { data, error } = await mockDb.getPosts();
 
         if (error) {
-          console.error("Error fetching posts:", error);
-          if (mounted) {
-            toast({
-              title: "Error",
-              description: "Failed to load posts. Please try again.",
-              variant: "destructive",
-            });
-          }
+          console.error("Error in getPosts:", error);
           throw error;
         }
 
+        if (!data) {
+          console.error("No data returned from getPosts");
+          throw new Error("No data returned from server");
+        }
+
+        console.log("Posts fetched successfully:", data.length, "posts");
         return data as PostWithRelations[];
       } catch (error) {
-        console.error("Query error:", error);
+        console.error("Query error in getPosts:", error);
         throw error;
       }
     },
     retry: 1,
     staleTime: 30000,
+    onError: (error) => {
+      console.error("Query error handler:", error);
+      if (mounted) {
+        toast({
+          title: "Error loading posts",
+          description: "Please try refreshing the page",
+          variant: "destructive",
+        });
+      }
+    }
   });
 
   const handleNewPost = async () => {
@@ -73,12 +86,14 @@ const Index = () => {
     }
 
     try {
+      console.log("Creating new post...");
       const {
         data: { user },
         error: userError,
       } = await mockDb.getUser();
 
       if (userError || !user) {
+        console.error("User error:", userError);
         toast({
           title: "Error",
           description: "You must be logged in to create a post",
@@ -92,15 +107,19 @@ const Index = () => {
         author_id: user.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Post creation error:", error);
+        throw error;
+      }
 
+      console.log("Post created successfully");
       setNewPost("");
       toast({
         title: "Success",
         description: "Post created successfully",
       });
     } catch (error: any) {
-      console.error("Error creating post:", error);
+      console.error("Error in handleNewPost:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create post",
@@ -110,6 +129,7 @@ const Index = () => {
   };
 
   if (error) {
+    console.error("Rendering error state:", error);
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -126,6 +146,7 @@ const Index = () => {
   }
 
   if (isLoading) {
+    console.log("Rendering loading state");
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -136,6 +157,7 @@ const Index = () => {
     );
   }
 
+  console.log("Rendering main content with", posts?.length || 0, "posts");
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto">
