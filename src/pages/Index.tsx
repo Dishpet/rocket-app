@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { Loader2 } from "lucide-react";
+import Post from "@/components/feed/Post";
 
 const Index = () => {
   const { toast } = useToast();
@@ -24,15 +25,21 @@ const Index = () => {
           .from("posts")
           .select(`
             *,
-            author:profiles(*)
+            profiles!posts_author_id_fkey_profiles(*),
+            likes(count),
+            comments(count)
           `)
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
+
         console.log("Posts fetched successfully:", data);
         return data;
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error("Error in query function:", error);
         throw error;
       }
     },
@@ -41,7 +48,7 @@ const Index = () => {
     meta: {
       onSettled: (data, error) => {
         if (error && mounted.current) {
-          console.error("Query error handler:", error);
+          console.error("Query settled with error:", error);
           toast({
             title: "Error loading posts",
             description: "Please try refreshing the page",
@@ -52,11 +59,13 @@ const Index = () => {
     }
   });
 
+  console.log("Render state:", { isLoading, error, postsCount: posts?.length });
+
   if (isLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin text-rfa-red" />
         </div>
       </MainLayout>
     );
@@ -69,6 +78,12 @@ const Index = () => {
           <p className="text-lg text-red-500">
             {error instanceof Error ? error.message : "Failed to load posts"}
           </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-rfa-red text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </MainLayout>
     );
@@ -78,26 +93,20 @@ const Index = () => {
     <MainLayout>
       <div className="space-y-6">
         {posts?.map((post) => (
-          <div
+          <Post
             key={post.id}
-            className="bg-rfa-gray p-4 rounded-lg border border-rfa-gray-light"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <img
-                src={post.author?.avatar_url || "/placeholder.svg"}
-                alt={post.author?.username || "User"}
-                className="w-10 h-10 rounded-full"
-              />
-              <div>
-                <p className="font-semibold">{post.author?.username || "Unknown User"}</p>
-                <p className="text-sm text-gray-400">
-                  {new Date(post.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-            <p className="text-gray-200">{post.content}</p>
-          </div>
+            author={post.profiles?.username || "Unknown User"}
+            content={post.content}
+            timestamp={new Date(post.created_at).toLocaleDateString()}
+            likes={post.likes?.[0]?.count || 0}
+            comments={post.comments?.[0]?.count || 0}
+          />
         ))}
+        {posts?.length === 0 && (
+          <div className="text-center py-8 text-gray-400">
+            No posts yet. Be the first to post!
+          </div>
+        )}
       </div>
     </MainLayout>
   );
