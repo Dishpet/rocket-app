@@ -18,28 +18,54 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const { toast } = useToast();
 
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ["profile", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", id || user?.id)
-        .maybeSingle();
+  console.log("Profile component rendering with id:", id);
+  console.log("Current user profile:", currentUserProfile);
 
-      if (error) throw error;
-      if (!data) {
-        throw new Error("Profile not found");
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ["profile", id || user?.id],
+    queryFn: async () => {
+      try {
+        console.log("Fetching profile for id:", id || user?.id);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", id || user?.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
+
+        console.log("Profile data fetched:", data);
+        if (!data) {
+          throw new Error("Profile not found");
+        }
+        return data;
+      } catch (error) {
+        console.error("Error in query function:", error);
+        throw error;
       }
-      return data;
     },
     meta: {
-      onSuccess: (data) => {
-        setUsername(data.username);
-        setFullName(data.full_name || "");
-      },
-    },
+      onSettled: (data, error) => {
+        if (data) {
+          setUsername(data.username);
+          setFullName(data.full_name || "");
+        }
+        if (error) {
+          console.error("Query settled with error:", error);
+          toast({
+            title: "Error loading profile",
+            description: "Please try refreshing the page",
+            variant: "destructive",
+          });
+        }
+      }
+    }
   });
+
+  console.log("Render state:", { isLoading, error, profile });
 
   const handleUpdateProfile = async () => {
     try {
@@ -75,7 +101,6 @@ const Profile = () => {
     try {
       setIsUploading(true);
       
-      // Upload image to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const filePath = `${user?.id}/avatar.${fileExt}`;
       
@@ -85,12 +110,10 @@ const Profile = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("media")
         .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
@@ -117,29 +140,25 @@ const Profile = () => {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin text-rfa-red" />
         </div>
       </MainLayout>
     );
   }
 
-  if (error) {
+  if (error || !profile) {
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
           <p className="text-lg text-red-500">
             {error instanceof Error ? error.message : "Failed to load profile"}
           </p>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-          <p className="text-lg">Profile not found</p>
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="destructive"
+          >
+            Retry
+          </Button>
         </div>
       </MainLayout>
     );
