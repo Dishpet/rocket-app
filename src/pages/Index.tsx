@@ -5,8 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { mockDb } from "@/lib/mockDb";
 
 type PostWithRelations = {
   id: string;
@@ -38,18 +38,7 @@ const Index = () => {
     queryFn: async () => {
       try {
         console.log("Fetching posts...");
-        const { data, error } = await supabase
-          .from("posts")
-          .select(`
-            *,
-            profiles (
-              username,
-              avatar_url
-            ),
-            likes(count),
-            comments(count)
-          `)
-          .order("created_at", { ascending: false });
+        const { data, error } = await mockDb.getPosts();
 
         if (error) {
           console.error("Error fetching posts:", error);
@@ -63,12 +52,7 @@ const Index = () => {
           throw error;
         }
 
-        if (!data) return [];
-
-        return data.map(post => ({
-          ...post,
-          profiles: post.profiles || { username: 'Unknown', avatar_url: null }
-        })) as PostWithRelations[];
+        return data as PostWithRelations[];
       } catch (error) {
         console.error("Query error:", error);
         throw error;
@@ -92,7 +76,7 @@ const Index = () => {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await mockDb.getUser();
 
       if (userError || !user) {
         toast({
@@ -103,12 +87,10 @@ const Index = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from("posts")
-        .insert({
-          content: newPost.trim(),
-          author_id: user.id,
-        });
+      const { error } = await mockDb.createPost({
+        content: newPost.trim(),
+        author_id: user.id,
+      });
 
       if (error) throw error;
 
