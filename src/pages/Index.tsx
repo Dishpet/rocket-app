@@ -63,14 +63,16 @@ const Index = () => {
     },
     retry: 1,
     staleTime: 30000,
-    onError: (error) => {
-      console.error("Query error handler:", error);
-      if (mounted) {
-        toast({
-          title: "Error loading posts",
-          description: "Please try refreshing the page",
-          variant: "destructive",
-        });
+    meta: {
+      onError: () => {
+        console.error("Query error handler:", error);
+        if (mounted) {
+          toast({
+            title: "Error loading posts",
+            description: "Please try refreshing the page",
+            variant: "destructive",
+          });
+        }
       }
     }
   });
