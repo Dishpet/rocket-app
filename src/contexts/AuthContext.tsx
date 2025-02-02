@@ -22,16 +22,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      const { data, error } = await db
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .select();
-
-      if (error) throw error;
-      if (data?.[0]) {
-        console.log("Profile found:", data[0]);
-        setProfile(data[0]);
+      const response = await (db as any).from("profiles").select("*").eq("id", userId);
+      
+      if (response.error) throw response.error;
+      if (response.data?.[0]) {
+        console.log("Profile found:", response.data[0]);
+        setProfile(response.data[0]);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -42,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let mounted = true;
 
     // Set up auth state listener
-    const { data: { subscription } } = db.auth.onAuthStateChange(
+    const { data: { subscription } } = (db as any).auth.onAuthStateChange(
       async (_event, session) => {
         console.log("Auth state changed:", _event, session ? "logged in" : "logged out");
         
@@ -62,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Initial session check
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await db.auth.getSession();
+        const { data: { session } } = await (db as any).auth.getSession();
         console.log("Initial session check:", session ? "session found" : "no session");
 
         if (!mounted) return;
