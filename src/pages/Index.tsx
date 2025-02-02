@@ -5,10 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { Loader2 } from "lucide-react";
 import Post from "@/components/feed/Post";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { toast } = useToast();
   const mounted = useRef(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     return () => {
@@ -21,13 +23,22 @@ const Index = () => {
     queryFn: async () => {
       console.log("Fetching posts...");
       try {
+        if (!user) {
+          console.log("No user found, skipping posts fetch");
+          return null;
+        }
+
         const { data, error } = await supabase
           .from("posts")
           .select(`
             *,
-            profiles!posts_author_id_fkey_profiles(*),
-            likes(count),
-            comments(count)
+            profiles:author_id (
+              id,
+              username,
+              avatar_url
+            ),
+            likes:likes (count),
+            comments:comments (count)
           `)
           .order("created_at", { ascending: false });
 
@@ -43,6 +54,7 @@ const Index = () => {
         throw error;
       }
     },
+    enabled: !!user,
     retry: 1,
     staleTime: 30000,
     meta: {
@@ -59,13 +71,24 @@ const Index = () => {
     }
   });
 
-  console.log("Render state:", { isLoading, error, postsCount: posts?.length });
+  console.log("Render state:", { isLoading, error, postsCount: posts?.length, user });
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <p className="text-gray-400">Please sign in to view posts</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-rfa-red" />
+          <p className="text-gray-400">Loading posts...</p>
         </div>
       </MainLayout>
     );
@@ -102,7 +125,7 @@ const Index = () => {
             comments={post.comments?.[0]?.count || 0}
           />
         ))}
-        {posts?.length === 0 && (
+        {(!posts || posts.length === 0) && (
           <div className="text-center py-8 text-gray-400">
             No posts yet. Be the first to post!
           </div>
