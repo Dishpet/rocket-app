@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user:", userId);
       const { data, error } = await db
         .from("profiles")
         .select("*")
@@ -28,7 +29,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select();
 
       if (error) throw error;
-      if (data?.[0]) setProfile(data[0]);
+      if (data?.[0]) {
+        console.log("Profile found:", data[0]);
+        setProfile(data[0]);
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
     }

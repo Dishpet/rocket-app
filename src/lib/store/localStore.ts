@@ -11,14 +11,18 @@ interface LocalState {
   messages: Message[];
   notifications: Notification[];
   userRoles: UserRole[];
-  mediaStorage: Record<string, string>; // Store base64 strings
+  mediaStorage: Record<string, string>;
 
-  // Auth methods
-  signUp: (email: string, password: string, metadata?: any) => Promise<QueryResult<LocalUser>>;
-  signIn: (email: string, password: string) => Promise<QueryResult<LocalUser>>;
-  signOut: () => Promise<QueryResult<void>>;
-  
-  // Database methods
+  auth: {
+    getSession: () => Promise<{ data: { session: { user: LocalUser } | null }, error: Error | null }>;
+    signUp: (credentials: { email: string; password: string; options?: any }) => Promise<QueryResult<{ user: LocalUser }>>;
+    signInWithPassword: (credentials: { email: string; password: string }) => Promise<QueryResult<{ user: LocalUser }>>;
+    signOut: () => Promise<{ error: Error | null }>;
+    onAuthStateChange: (callback: (event: string, session: { user: LocalUser } | null) => void) => { 
+      data: { subscription: { unsubscribe: () => void } }
+    };
+  };
+
   from: (table: string) => {
     select: (query?: string) => Promise<QueryResult<any>>;
     insert: (data: any) => Promise<QueryResult<any>>;
@@ -27,8 +31,7 @@ interface LocalState {
     eq: (column: string, value: any) => any;
     order: (column: string, options: { ascending: boolean }) => any;
   };
-  
-  // Storage methods
+
   storage: {
     from: (bucket: string) => {
       upload: (path: string, file: File) => Promise<QueryResult<string>>;
@@ -48,54 +51,75 @@ const useLocalStore = create<LocalState>((set, get) => ({
   userRoles: [],
   mediaStorage: {},
 
-  signUp: async (email, password, metadata) => {
-    try {
-      const userId = uuidv4();
-      const newUser: LocalUser = {
-        id: userId,
-        email,
-        created_at: new Date().toISOString(),
-      };
-
-      if (metadata?.username) {
-        const profile: Profile = {
-          id: userId,
-          username: metadata.username,
-          full_name: metadata.full_name || null,
-          avatar_url: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        set(state => ({ profiles: [...state.profiles, profile] }));
-      }
-
-      set({ currentUser: newUser });
-      return { data: newUser, error: null };
-    } catch (error) {
-      return { data: null, error: error as Error };
-    }
-  },
-
-  signIn: async (email, password) => {
-    try {
-      // Simulate authentication
+  auth: {
+    getSession: async () => {
       const user = get().currentUser;
-      if (!user || user.email !== email) {
-        throw new Error('Invalid credentials');
-      }
-      return { data: user, error: null };
-    } catch (error) {
-      return { data: null, error: error as Error };
-    }
-  },
+      return { data: { session: user ? { user } : null }, error: null };
+    },
 
-  signOut: async () => {
-    try {
-      set({ currentUser: null });
-      return { data: null, error: null };
-    } catch (error) {
-      return { data: null, error: error as Error };
-    }
+    signUp: async ({ email, password, options }) => {
+      try {
+        const userId = uuidv4();
+        const newUser: LocalUser = {
+          id: userId,
+          email,
+          created_at: new Date().toISOString(),
+        };
+
+        if (options?.data?.username) {
+          const profile: Profile = {
+            id: userId,
+            username: options.data.username,
+            full_name: options.data.full_name || null,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          set(state => ({ profiles: [...state.profiles, profile] }));
+        }
+
+        set({ currentUser: newUser });
+        return { data: { user: newUser }, error: null };
+      } catch (error) {
+        return { data: null, error: error as Error };
+      }
+    },
+
+    signInWithPassword: async ({ email, password }) => {
+      try {
+        const user = get().currentUser;
+        if (!user || user.email !== email) {
+          throw new Error('Invalid credentials');
+        }
+        return { data: { user }, error: null };
+      } catch (error) {
+        return { data: null, error: error as Error };
+      }
+    },
+
+    signOut: async () => {
+      try {
+        set({ currentUser: null });
+        return { error: null };
+      } catch (error) {
+        return { error: error as Error };
+      }
+    },
+
+    onAuthStateChange: (callback) => {
+      // Simulate initial auth state
+      const user = get().currentUser;
+      callback('INITIAL_SESSION', user ? { user } : null);
+
+      // Return mock subscription
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {},
+          },
+        },
+      };
+    },
   },
 
   from: (table: string) => {
