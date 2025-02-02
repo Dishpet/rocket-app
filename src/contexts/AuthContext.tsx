@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { db } from "@/lib/store/db";
+import { Profile } from "@/lib/store/types";
 
 interface AuthContextType {
   user: User | null;
-  profile: any | null;
+  profile: Profile | null;
   isLoading: boolean;
 }
 
@@ -16,21 +17,25 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      const response = await (db as any).from("profiles").select("*").eq("id", userId);
+      const { data, error } = await db.from("profiles").select("*").eq("id", userId).single();
       
-      if (response.error) throw response.error;
-      if (response.data?.[0]) {
-        console.log("Profile found:", response.data[0]);
-        setProfile(response.data[0]);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (data) {
+        console.log("Profile found:", data);
+        setProfile(data as Profile);
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error in fetchProfile:", error);
     }
   };
 
@@ -38,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let mounted = true;
 
     // Set up auth state listener
-    const { data: { subscription } } = (db as any).auth.onAuthStateChange(
+    const { data: { subscription } } = db.auth.onAuthStateChange(
       async (_event, session) => {
         console.log("Auth state changed:", _event, session ? "logged in" : "logged out");
         
@@ -58,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Initial session check
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await (db as any).auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         console.log("Initial session check:", session ? "session found" : "no session");
 
         if (!mounted) return;

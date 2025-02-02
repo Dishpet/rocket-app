@@ -24,3 +24,24 @@ export type QueryOptions = {
   eq?: Record<string, any>;
   order?: Record<string, 'asc' | 'desc'>;
 };
+
+export interface DatabaseClient {
+  auth: {
+    getSession: () => Promise<{ data: { session: { user: LocalUser } | null }, error: Error | null }>;
+    signUp: (credentials: { email: string; password: string; options?: any }) => Promise<QueryResult<{ user: LocalUser }>>;
+    signInWithPassword: (credentials: { email: string; password: string }) => Promise<QueryResult<{ user: LocalUser }>>;
+    signOut: () => Promise<{ error: Error | null }>;
+    onAuthStateChange: (callback: (event: string, session: { user: LocalUser } | null) => void) => { 
+      data: { subscription: { unsubscribe: () => void } }
+    };
+  };
+  from: (table: string) => {
+    select: (query?: string) => Promise<QueryResult<any>>;
+    single: () => Promise<QueryResult<any>>;
+    insert: (data: any) => Promise<QueryResult<any>>;
+    update: (data: any) => Promise<QueryResult<any>>;
+    delete: () => Promise<QueryResult<void>>;
+    eq: (column: string, value: any) => any;
+    order: (column: string, options: { ascending: boolean }) => any;
+  };
+}
