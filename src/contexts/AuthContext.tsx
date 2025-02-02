@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      const { data, error } = await db.from("profiles").select("*").eq("id", userId).single();
+      const { data, error } = await db.from<Profile>("profiles").select("*").eq("id", userId).single();
       
       if (error) {
         console.error("Error fetching profile:", error);
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data) {
         console.log("Profile found:", data);
-        setProfile(data as Profile);
+        setProfile(data);
       }
     } catch (error) {
       console.error("Error in fetchProfile:", error);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!mounted) return;
 
         if (session?.user) {
-          setUser(session.user);
+          setUser(session.user as User);
           await fetchProfile(session.user.id);
         } else {
           setUser(null);
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!mounted) return;
 
         if (session?.user) {
-          setUser(session.user);
+          setUser(session.user as User);
           await fetchProfile(session.user.id);
         }
       } catch (error) {
