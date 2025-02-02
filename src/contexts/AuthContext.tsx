@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/store/db";
 
 interface AuthContextType {
   user: User | null;
@@ -21,14 +21,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .maybeSingle();
+        .select();
 
       if (error) throw error;
-      if (data) setProfile(data);
+      if (data?.[0]) setProfile(data[0]);
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let mounted = true;
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = db.auth.onAuthStateChange(
       async (_event, session) => {
         console.log("Auth state changed:", _event, session ? "logged in" : "logged out");
         
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Initial session check
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         console.log("Initial session check:", session ? "session found" : "no session");
 
         if (!mounted) return;
