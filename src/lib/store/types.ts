@@ -18,14 +18,9 @@ export type LocalUser = {
   created_at: string;
 };
 
-export type QueryResult<T> = {
-  data: T | null;
-  error: PostgrestError | null;
-};
-
 export type TableData<T> = {
   data: T | null;
-  error: Error | null;
+  error: Error | PostgrestError | null;
 };
 
 export interface DatabaseClient {
@@ -37,7 +32,7 @@ export interface DatabaseClient {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
-  from: <T>(table: TableName) => {
+  from: <T extends Tables[TableName]["Row"]>(table: TableName) => {
     select: (query?: string) => {
       single: () => Promise<TableData<T>>;
       eq: (column: string, value: any) => {

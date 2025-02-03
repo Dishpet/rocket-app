@@ -50,7 +50,7 @@ const wrapSupabase = (): DatabaseClient => {
       insert: async (data: Partial<T>): Promise<TableData<T>> => {
         const { data: result, error } = await supabase
           .from(table)
-          .insert(data)
+          .insert(data as any)
           .select()
           .single();
         return { data: result as T, error };
@@ -58,7 +58,7 @@ const wrapSupabase = (): DatabaseClient => {
       update: async (data: Partial<T>): Promise<TableData<T>> => {
         const { data: result, error } = await supabase
           .from(table)
-          .update(data)
+          .update(data as any)
           .eq('id', (data as any).id)
           .select()
           .single();

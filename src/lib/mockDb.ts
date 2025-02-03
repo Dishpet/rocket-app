@@ -1,4 +1,4 @@
-import { DatabaseClient, Tables, TableData } from "@/lib/store/types";
+import { DatabaseClient, Tables, TableData, TableName } from "@/lib/store/types";
 import { v4 as uuidv4 } from 'uuid';
 
 type Profile = Tables['profiles']['Row'];
@@ -86,7 +86,7 @@ class MockDatabase implements DatabaseClient {
     }
   };
 
-  from = <T>(table: string) => ({
+  from = <T extends Tables[TableName]["Row"]>(table: TableName) => ({
     select: (query?: string) => ({
       single: async (): Promise<TableData<T>> => {
         const data = this.getTableData(table);
@@ -126,7 +126,7 @@ class MockDatabase implements DatabaseClient {
     }
   });
 
-  private getTableData(table: string): any[] {
+  private getTableData(table: TableName): any[] {
     switch (table) {
       case 'posts':
         return this.posts;
