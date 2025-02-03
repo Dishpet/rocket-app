@@ -1,21 +1,20 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, DatabaseClient, TableName, Tables } from './types';
-
-interface LocalState {
-  currentUser: LocalUser | null;
-  profiles: Profile[];
-  posts: Post[];
-  likes: Like[];
-  comments: Comment[];
-  messages: Message[];
-  notifications: Notification[];
-  userRoles: UserRole[];
-  mediaStorage: Record<string, string>;
-}
+import { mockDb } from '../mockDb';
 
 const useLocalStore = (): DatabaseClient => {
-  const store = create<LocalState>(() => ({
+  const store = create<{
+    currentUser: LocalUser | null;
+    profiles: Profile[];
+    posts: Post[];
+    likes: Like[];
+    comments: Comment[];
+    messages: Message[];
+    notifications: Notification[];
+    userRoles: UserRole[];
+    mediaStorage: Record<string, string>;
+  }>(() => ({
     currentUser: null,
     profiles: [],
     posts: [],
@@ -27,25 +26,34 @@ const useLocalStore = (): DatabaseClient => {
     mediaStorage: {},
   }));
 
-  const getTableData = <T extends Tables[TableName]["Row"]>(table: TableName): T[] => {
-    const state = store.getState();
-    switch (table) {
-      case 'profiles': return state.profiles as T[];
-      case 'posts': return state.posts as T[];
-      case 'likes': return state.likes as T[];
-      case 'comments': return state.comments as T[];
-      case 'messages': return state.messages as T[];
-      case 'notifications': return state.notifications as T[];
-      case 'user_roles': return state.userRoles as T[];
-      default: return [];
-    }
-  };
-
   return {
     auth: {
       getSession: async () => {
-        const user = store.getState().currentUser;
-        return { data: { session: user ? { user } : null }, error: null };
+        const { data } = await mockDb.getUser();
+        return { 
+          data: { session: data.user ? { user: data.user as LocalUser } : null },
+          error: null 
+        };
+      },
+      signInWithPassword: async ({ email, password }) => {
+        console.log('Attempting login with:', email);
+        const { data, error } = await mockDb.signInWithPassword({ email, password });
+        
+        if (error) {
+          console.error('Login error:', error);
+          return { data: null, error };
+        }
+
+        if (!data?.user) {
+          console.error('No user data returned');
+          return { 
+            data: null, 
+            error: new Error('Invalid login credentials') 
+          };
+        }
+
+        store.setState({ currentUser: data.user as LocalUser });
+        return { data: { user: data.user as LocalUser }, error: null };
       },
       signUp: async ({ email, password, options }) => {
         try {
@@ -57,17 +65,6 @@ const useLocalStore = (): DatabaseClient => {
           };
           store.setState({ currentUser: newUser });
           return { data: { user: newUser }, error: null };
-        } catch (error) {
-          return { data: null, error: error as Error };
-        }
-      },
-      signInWithPassword: async ({ email }) => {
-        try {
-          const user = store.getState().currentUser;
-          if (!user || user.email !== email) {
-            throw new Error('Invalid credentials');
-          }
-          return { data: { user }, error: null };
         } catch (error) {
           return { data: null, error: error as Error };
         }

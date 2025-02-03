@@ -17,15 +17,49 @@ class MockDatabase {
   private messages: Message[] = [];
   private notifications: Notification[] = [];
   private userRoles: UserRole[] = [];
-  private currentUser = {
-    id: 'mock-user-id',
-    email: 'dispet.fun@gmail.com'
-  };
+  
+  // Test users for development
+  private users = [
+    {
+      id: 'test-user-1',
+      email: 'nikola.kurobasa87@gmail.com',
+      password: 'Test123',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'test-user-2',
+      email: 'coach@rfa.com',
+      password: 'Coach123',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'test-user-3',
+      email: 'admin@rfa.com',
+      password: 'Admin123',
+      created_at: new Date().toISOString()
+    }
+  ];
 
   // Auth methods
   async getUser() {
     return {
-      data: { user: this.currentUser },
+      data: { user: this.users[0] },
+      error: null
+    };
+  }
+
+  async signInWithPassword({ email, password }: { email: string, password: string }) {
+    const user = this.users.find(u => u.email === email && u.password === password);
+    
+    if (!user) {
+      return {
+        data: null,
+        error: new Error('Invalid login credentials')
+      };
+    }
+
+    return {
+      data: { user },
       error: null
     };
   }
@@ -50,7 +84,7 @@ class MockDatabase {
     const newPost: Post = {
       id: crypto.randomUUID(),
       content: post.content || '',
-      author_id: post.author_id || this.currentUser.id,
+      author_id: post.author_id || this.users[0].id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_academy_post: post.is_academy_post || false
@@ -71,7 +105,7 @@ class MockDatabase {
     const newLike: Like = {
       id: crypto.randomUUID(),
       post_id: like.post_id!,
-      user_id: like.user_id || this.currentUser.id,
+      user_id: like.user_id || this.users[0].id,
       created_at: new Date().toISOString()
     };
     this.likes.push(newLike);
@@ -91,7 +125,7 @@ class MockDatabase {
       id: crypto.randomUUID(),
       content: comment.content || '',
       post_id: comment.post_id!,
-      author_id: comment.author_id || this.currentUser.id,
+      author_id: comment.author_id || this.users[0].id,
       parent_id: comment.parent_id || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -102,20 +136,22 @@ class MockDatabase {
 
   // Helper method to seed initial data
   seedData() {
-    // Add mock profile for current user
-    this.profiles.push({
-      id: this.currentUser.id,
-      username: 'CurrentUser',
-      full_name: 'Current User',
-      avatar_url: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    // Add mock profiles for test users
+    this.users.forEach(user => {
+      this.profiles.push({
+        id: user.id,
+        username: user.email.split('@')[0],
+        full_name: user.email.split('@')[0].split('.').join(' '),
+        avatar_url: null,
+        created_at: user.created_at,
+        updated_at: user.created_at
+      });
     });
 
     // Add some mock posts
     this.createPost({
       content: 'Welcome to Rocket Football Academy! 🚀⚽',
-      author_id: this.currentUser.id,
+      author_id: this.users[0].id,
       is_academy_post: true
     });
   }
