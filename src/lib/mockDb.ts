@@ -18,7 +18,6 @@ class MockDatabase implements DatabaseClient {
   private notifications: Notification[] = [];
   private userRoles: UserRole[] = [];
   
-  // Test users for development
   private users = [
     {
       id: uuidv4(),
@@ -48,7 +47,7 @@ class MockDatabase implements DatabaseClient {
     getSession: async () => {
       const user = this.users[0];
       return {
-        data: { session: { user } },
+        data: { session: user ? { user } : null },
         error: null
       };
     },
@@ -75,7 +74,7 @@ class MockDatabase implements DatabaseClient {
 
     onAuthStateChange: (callback: (event: string, session: { user: any } | null) => void) => {
       const user = this.users[0];
-      callback('SIGNED_IN', { user });
+      callback('SIGNED_IN', user ? { user } : null);
       
       return {
         data: {
@@ -91,14 +90,12 @@ class MockDatabase implements DatabaseClient {
     select: (query?: string) => ({
       single: async (): Promise<TableData<T>> => {
         const data = this.getTableData(table);
-        return { data: data as T, error: null };
+        return { data: data[0] as T, error: null };
       },
       eq: (column: string, value: any) => ({
         single: async (): Promise<TableData<T>> => {
           const data = this.getTableData(table);
-          const filtered = Array.isArray(data) 
-            ? data.find(item => (item as any)[column] === value)
-            : null;
+          const filtered = data.find(item => (item as any)[column] === value);
           return { data: filtered as T, error: null };
         }
       })
@@ -112,20 +109,15 @@ class MockDatabase implements DatabaseClient {
         updated_at: new Date().toISOString()
       };
       
-      if (Array.isArray(tableData)) {
-        tableData.push(newItem as any);
-      }
-      
+      tableData.push(newItem as any);
       return { data: newItem as T, error: null };
     },
     update: async (data: Partial<T>): Promise<TableData<T>> => {
       const tableData = this.getTableData(table);
-      if (Array.isArray(tableData)) {
-        const index = tableData.findIndex(item => (item as any).id === (data as any).id);
-        if (index !== -1) {
-          tableData[index] = { ...tableData[index], ...data, updated_at: new Date().toISOString() };
-          return { data: tableData[index] as T, error: null };
-        }
+      const index = tableData.findIndex(item => (item as any).id === (data as any).id);
+      if (index !== -1) {
+        tableData[index] = { ...tableData[index], ...data, updated_at: new Date().toISOString() };
+        return { data: tableData[index] as T, error: null };
       }
       return { data: null, error: new Error('Item not found') };
     },

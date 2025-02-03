@@ -29,7 +29,7 @@ const wrapSupabase = (): DatabaseClient => {
     },
     from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
-        single: async () => {
+        single: async (): Promise<TableData<T>> => {
           const { data, error } = await supabase
             .from(table)
             .select(query || '*')
@@ -37,7 +37,7 @@ const wrapSupabase = (): DatabaseClient => {
           return { data: data as T, error };
         },
         eq: (column: string, value: any) => ({
-          single: async () => {
+          single: async (): Promise<TableData<T>> => {
             const { data, error } = await supabase
               .from(table)
               .select('*')
@@ -47,18 +47,18 @@ const wrapSupabase = (): DatabaseClient => {
           }
         })
       }),
-      insert: async (data: Partial<T>) => {
+      insert: async (data: Partial<T>): Promise<TableData<T>> => {
         const { data: result, error } = await supabase
           .from(table)
-          .insert(data as any)
+          .insert(data)
           .select()
           .single();
         return { data: result as T, error };
       },
-      update: async (data: Partial<T>) => {
+      update: async (data: Partial<T>): Promise<TableData<T>> => {
         const { data: result, error } = await supabase
           .from(table)
-          .update(data as any)
+          .update(data)
           .eq('id', (data as any).id)
           .select()
           .single();
