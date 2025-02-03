@@ -1,6 +1,7 @@
 import { Database } from "@/integrations/supabase/types";
 
 export type Tables = Database['public']['Tables'];
+export type TableName = keyof Tables;
 export type Profile = Tables['profiles']['Row'];
 export type Post = Tables['posts']['Row'];
 export type Like = Tables['likes']['Row'];
@@ -35,7 +36,7 @@ export interface DatabaseClient {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
-  from: <T>(table: string) => {
+  from: <T extends Tables[TableName]["Row"]>(table: TableName) => {
     select: (query?: string) => {
       single: () => Promise<QueryResult<T>>;
       eq: (column: string, value: any) => {

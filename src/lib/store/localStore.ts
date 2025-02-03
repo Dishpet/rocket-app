@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, QueryOptions, DatabaseClient } from './types';
+import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, DatabaseClient, TableName, Tables } from './types';
 
 interface LocalState {
   currentUser: LocalUser | null;
@@ -14,8 +14,8 @@ interface LocalState {
   mediaStorage: Record<string, string>;
 }
 
-const useLocalStore = () => {
-  const store = create<LocalState>((set, get) => ({
+const useLocalStore = (): DatabaseClient => {
+  const store = create<LocalState>(() => ({
     currentUser: null,
     profiles: [],
     posts: [],
@@ -27,21 +27,21 @@ const useLocalStore = () => {
     mediaStorage: {},
   }));
 
-  const getTableData = (table: string) => {
+  const getTableData = <T extends Tables[TableName]["Row"]>(table: TableName): T[] => {
     const state = store.getState();
     switch (table) {
-      case 'profiles': return state.profiles;
-      case 'posts': return state.posts;
-      case 'likes': return state.likes;
-      case 'comments': return state.comments;
-      case 'messages': return state.messages;
-      case 'notifications': return state.notifications;
-      case 'user_roles': return state.userRoles;
+      case 'profiles': return state.profiles as T[];
+      case 'posts': return state.posts as T[];
+      case 'likes': return state.likes as T[];
+      case 'comments': return state.comments as T[];
+      case 'messages': return state.messages as T[];
+      case 'notifications': return state.notifications as T[];
+      case 'user_roles': return state.userRoles as T[];
       default: return [];
     }
   };
 
-  const client: DatabaseClient = {
+  return {
     auth: {
       getSession: async () => {
         const user = store.getState().currentUser;
@@ -92,11 +92,11 @@ const useLocalStore = () => {
         };
       },
     },
-    from: <T>(table: string) => ({
+    from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
           try {
-            const data = getTableData(table)[0] as T;
+            const data = getTableData<T>(table)[0];
             return { data, error: null };
           } catch (error) {
             return { data: null, error: error as Error };
@@ -105,8 +105,8 @@ const useLocalStore = () => {
         eq: (column: string, value: any) => ({
           single: async () => {
             try {
-              const data = getTableData(table).find(item => item[column] === value) as T;
-              return { data, error: null };
+              const data = getTableData<T>(table).find(item => item[column] === value);
+              return { data: data || null, error: null };
             } catch (error) {
               return { data: null, error: error as Error };
             }
@@ -123,7 +123,7 @@ const useLocalStore = () => {
           } as T;
           
           store.setState(state => ({
-            [table]: [...getTableData(table), newItem]
+            [table]: [...getTableData<T>(table), newItem]
           }));
           
           return { data: newItem, error: null };
@@ -135,7 +135,7 @@ const useLocalStore = () => {
         try {
           let updated: T | null = null;
           store.setState(state => {
-            const items = getTableData(table);
+            const items = getTableData<T>(table);
             const index = items.findIndex(item => item.id === (data as any).id);
             if (index !== -1) {
               const updatedItem = { ...items[index], ...data } as T;
@@ -162,8 +162,6 @@ const useLocalStore = () => {
       }
     })
   };
-
-  return client;
 };
 
 export default useLocalStore;
