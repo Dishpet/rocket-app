@@ -1,31 +1,38 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, DatabaseClient, TableName, Tables } from './types';
+import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, DatabaseClient, TableName } from './types';
 import { mockDb } from '../mockDb';
 
-const useLocalStore = (): DatabaseClient => {
-  const store = create<{
-    currentUser: LocalUser | null;
-    profiles: Profile[];
-    posts: Post[];
-    likes: Like[];
-    comments: Comment[];
-    messages: Message[];
-    notifications: Notification[];
-    userRoles: UserRole[];
-    mediaStorage: Record<string, string>;
-  }>(() => ({
-    currentUser: null,
-    profiles: [],
-    posts: [],
-    likes: [],
-    comments: [],
-    messages: [],
-    notifications: [],
-    userRoles: [],
-    mediaStorage: {},
-  }));
+type StoreState = {
+  currentUser: LocalUser | null;
+  profiles: Profile[];
+  posts: Post[];
+  likes: Like[];
+  comments: Comment[];
+  messages: Message[];
+  notifications: Notification[];
+  userRoles: UserRole[];
+  mediaStorage: Record<string, string>;
+};
 
+const useStore = create<StoreState>(() => ({
+  currentUser: null,
+  profiles: [],
+  posts: [],
+  likes: [],
+  comments: [],
+  messages: [],
+  notifications: [],
+  userRoles: [],
+  mediaStorage: {},
+}));
+
+const getTableData = <T>(table: TableName): T[] => {
+  const state = useStore.getState();
+  return state[table.toLowerCase() as keyof StoreState] as T[] || [];
+};
+
+const useLocalStore = (): DatabaseClient => {
   return {
     auth: {
       getSession: async () => {
@@ -52,10 +59,10 @@ const useLocalStore = (): DatabaseClient => {
           };
         }
 
-        store.setState({ currentUser: data.user as LocalUser });
+        useStore.setState({ currentUser: data.user as LocalUser });
         return { data: { user: data.user as LocalUser }, error: null };
       },
-      signUp: async ({ email, password, options }) => {
+      signUp: async ({ email, password }) => {
         try {
           const userId = uuidv4();
           const newUser: LocalUser = {
@@ -63,7 +70,7 @@ const useLocalStore = (): DatabaseClient => {
             email,
             created_at: new Date().toISOString(),
           };
-          store.setState({ currentUser: newUser });
+          useStore.setState({ currentUser: newUser });
           return { data: { user: newUser }, error: null };
         } catch (error) {
           return { data: null, error: error as Error };
@@ -71,14 +78,14 @@ const useLocalStore = (): DatabaseClient => {
       },
       signOut: async () => {
         try {
-          store.setState({ currentUser: null });
+          useStore.setState({ currentUser: null });
           return { error: null };
         } catch (error) {
           return { error: error as Error };
         }
       },
       onAuthStateChange: (callback) => {
-        const user = store.getState().currentUser;
+        const user = useStore.getState().currentUser;
         callback('INITIAL_SESSION', user ? { user } : null);
         return {
           data: {
@@ -89,7 +96,7 @@ const useLocalStore = (): DatabaseClient => {
         };
       },
     },
-    from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
+    from: <T>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
           try {
@@ -102,7 +109,7 @@ const useLocalStore = (): DatabaseClient => {
         eq: (column: string, value: any) => ({
           single: async () => {
             try {
-              const data = getTableData<T>(table).find(item => item[column] === value);
+              const data = getTableData<T>(table).find(item => (item as any)[column] === value);
               return { data: data || null, error: null };
             } catch (error) {
               return { data: null, error: error as Error };
@@ -119,8 +126,8 @@ const useLocalStore = (): DatabaseClient => {
             updated_at: new Date().toISOString(),
           } as T;
           
-          store.setState(state => ({
-            [table]: [...getTableData<T>(table), newItem]
+          useStore.setState(state => ({
+            [table.toLowerCase()]: [...getTableData<T>(table), newItem]
           }));
           
           return { data: newItem, error: null };
@@ -131,14 +138,14 @@ const useLocalStore = (): DatabaseClient => {
       update: async (data: Partial<T>) => {
         try {
           let updated: T | null = null;
-          store.setState(state => {
+          useStore.setState(state => {
             const items = getTableData<T>(table);
-            const index = items.findIndex(item => item.id === (data as any).id);
+            const index = items.findIndex(item => (item as any).id === (data as any).id);
             if (index !== -1) {
               const updatedItem = { ...items[index], ...data } as T;
               items[index] = updatedItem;
               updated = updatedItem;
-              return { [table]: items };
+              return { [table.toLowerCase()]: items };
             }
             return state;
           });
@@ -149,8 +156,8 @@ const useLocalStore = (): DatabaseClient => {
       },
       delete: async () => {
         try {
-          store.setState(state => ({
-            [table]: []
+          useStore.setState(state => ({
+            [table.toLowerCase()]: []
           }));
           return { data: null, error: null };
         } catch (error) {

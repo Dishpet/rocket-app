@@ -36,7 +36,7 @@ export interface DatabaseClient {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
-  from: <T extends Tables[TableName]["Row"]>(table: TableName) => {
+  from: <T>(table: TableName) => {
     select: (query?: string) => {
       single: () => Promise<QueryResult<T>>;
       eq: (column: string, value: any) => {

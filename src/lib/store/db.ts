@@ -7,8 +7,71 @@ const USE_LOCAL_STORAGE = true;
 
 const wrapSupabase = (): DatabaseClient => {
   return {
-    ...supabase,
-    from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
+    auth: {
+      getSession: async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        return {
+          data: {
+            session: session ? {
+              user: {
+                id: session.user.id,
+                email: session.user.email!,
+                created_at: session.user.created_at,
+              }
+            } : null
+          },
+          error: error as Error | null
+        };
+      },
+      signInWithPassword: async (credentials) => {
+        const { data: { user }, error } = await supabase.auth.signInWithPassword(credentials);
+        return {
+          data: user ? {
+            user: {
+              id: user.id,
+              email: user.email!,
+              created_at: user.created_at,
+            }
+          } : null,
+          error: error as Error | null
+        };
+      },
+      signUp: async (credentials) => {
+        const { data: { user }, error } = await supabase.auth.signUp(credentials);
+        return {
+          data: user ? {
+            user: {
+              id: user.id,
+              email: user.email!,
+              created_at: user.created_at,
+            }
+          } : null,
+          error: error as Error | null
+        };
+      },
+      signOut: async () => {
+        const { error } = await supabase.auth.signOut();
+        return { error: error as Error | null };
+      },
+      onAuthStateChange: (callback) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            callback(
+              _event,
+              session ? {
+                user: {
+                  id: session.user.id,
+                  email: session.user.email!,
+                  created_at: session.user.created_at,
+                }
+              } : null
+            );
+          }
+        );
+        return { data: { subscription } };
+      }
+    },
+    from: <T>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
           const { data, error } = await supabase
@@ -21,7 +84,7 @@ const wrapSupabase = (): DatabaseClient => {
           single: async () => {
             const { data, error } = await supabase
               .from(table)
-              .select(query || '*')
+              .select('*')
               .eq(column, value)
               .single();
             return { data: data as T, error };
@@ -40,6 +103,7 @@ const wrapSupabase = (): DatabaseClient => {
         const { data: result, error } = await supabase
           .from(table)
           .update(data)
+          .eq('id', (data as any).id)
           .select()
           .single();
         return { data: result as T, error };
