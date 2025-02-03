@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import useLocalStore from "./localStore";
-import { DatabaseClient, TableName, Tables } from "./types";
+import { mockDb } from "@/lib/mockDb";
+import { DatabaseClient, TableName, Tables, TableData } from "./types";
 
-// Set this to false to use Supabase instead of local storage
+// Set this to true to use local storage instead of Supabase
 const USE_LOCAL_STORAGE = true;
 
 const wrapSupabase = (): DatabaseClient => {
@@ -10,68 +10,24 @@ const wrapSupabase = (): DatabaseClient => {
     auth: {
       getSession: async () => {
         const { data: { session }, error } = await supabase.auth.getSession();
-        return {
-          data: {
-            session: session ? {
-              user: {
-                id: session.user.id,
-                email: session.user.email!,
-                created_at: session.user.created_at,
-              }
-            } : null
-          },
-          error: error as Error | null
-        };
+        return { data: { session }, error };
       },
       signInWithPassword: async (credentials) => {
         const { data: { user }, error } = await supabase.auth.signInWithPassword(credentials);
-        return {
-          data: user ? {
-            user: {
-              id: user.id,
-              email: user.email!,
-              created_at: user.created_at,
-            }
-          } : null,
-          error: error as Error | null
-        };
-      },
-      signUp: async (credentials) => {
-        const { data: { user }, error } = await supabase.auth.signUp(credentials);
-        return {
-          data: user ? {
-            user: {
-              id: user.id,
-              email: user.email!,
-              created_at: user.created_at,
-            }
-          } : null,
-          error: error as Error | null
-        };
+        return { data: { user }, error };
       },
       signOut: async () => {
         const { error } = await supabase.auth.signOut();
-        return { error: error as Error | null };
+        return { error };
       },
       onAuthStateChange: (callback) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-            callback(
-              _event,
-              session ? {
-                user: {
-                  id: session.user.id,
-                  email: session.user.email!,
-                  created_at: session.user.created_at,
-                }
-              } : null
-            );
-          }
+          (_event, session) => callback(_event, session)
         );
         return { data: { subscription } };
       }
     },
-    from: <T>(table: TableName) => ({
+    from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
           const { data, error } = await supabase
@@ -91,18 +47,18 @@ const wrapSupabase = (): DatabaseClient => {
           }
         })
       }),
-      insert: async (data) => {
+      insert: async (data: Partial<T>) => {
         const { data: result, error } = await supabase
           .from(table)
-          .insert(data)
+          .insert(data as any)
           .select()
           .single();
         return { data: result as T, error };
       },
-      update: async (data) => {
+      update: async (data: Partial<T>) => {
         const { data: result, error } = await supabase
           .from(table)
-          .update(data)
+          .update(data as any)
           .eq('id', (data as any).id)
           .select()
           .single();
@@ -116,4 +72,4 @@ const wrapSupabase = (): DatabaseClient => {
   };
 };
 
-export const db: DatabaseClient = USE_LOCAL_STORAGE ? useLocalStore() : wrapSupabase();
+export const db: DatabaseClient = USE_LOCAL_STORAGE ? mockDb : wrapSupabase();

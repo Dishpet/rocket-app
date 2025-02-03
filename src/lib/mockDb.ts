@@ -1,6 +1,6 @@
-import { Database } from "@/integrations/supabase/types";
+import { DatabaseClient, Tables, TableData } from "@/lib/store/types";
+import { v4 as uuidv4 } from 'uuid';
 
-type Tables = Database['public']['Tables'];
 type Profile = Tables['profiles']['Row'];
 type Post = Tables['posts']['Row'];
 type Like = Tables['likes']['Row'];
@@ -9,7 +9,7 @@ type Message = Tables['messages']['Row'];
 type Notification = Tables['notifications']['Row'];
 type UserRole = Tables['user_roles']['Row'];
 
-class MockDatabase {
+class MockDatabase implements DatabaseClient {
   private posts: Post[] = [];
   private profiles: Profile[] = [];
   private likes: Like[] = [];
@@ -21,121 +21,141 @@ class MockDatabase {
   // Test users for development
   private users = [
     {
-      id: 'test-user-1',
+      id: uuidv4(),
       email: 'nikola.kurobasa87@gmail.com',
       password: 'Test123',
       created_at: new Date().toISOString()
     },
     {
-      id: 'test-user-2',
+      id: uuidv4(),
       email: 'coach@rfa.com',
       password: 'Coach123',
       created_at: new Date().toISOString()
     },
     {
-      id: 'test-user-3',
+      id: uuidv4(),
       email: 'admin@rfa.com',
       password: 'Admin123',
       created_at: new Date().toISOString()
     }
   ];
 
-  // Auth methods
-  async getUser() {
-    return {
-      data: { user: this.users[0] },
-      error: null
-    };
+  constructor() {
+    this.seedData();
   }
 
-  async signInWithPassword({ email, password }: { email: string, password: string }) {
-    const user = this.users.find(u => u.email === email && u.password === password);
-    
-    if (!user) {
+  auth = {
+    getSession: async () => {
+      const user = this.users[0];
       return {
-        data: null,
-        error: new Error('Invalid login credentials')
+        data: { session: { user } },
+        error: null
+      };
+    },
+
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      const user = this.users.find(u => u.email === email && u.password === password);
+      
+      if (!user) {
+        return {
+          data: null,
+          error: new Error('Invalid login credentials')
+        };
+      }
+
+      return {
+        data: { user },
+        error: null
+      };
+    },
+
+    signOut: async () => {
+      return { error: null };
+    },
+
+    onAuthStateChange: (callback: (event: string, session: { user: any } | null) => void) => {
+      const user = this.users[0];
+      callback('SIGNED_IN', { user });
+      
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
       };
     }
+  };
 
-    return {
-      data: { user },
-      error: null
-    };
+  from = <T>(table: string) => ({
+    select: (query?: string) => ({
+      single: async (): Promise<TableData<T>> => {
+        const data = this.getTableData(table);
+        return { data: data as T, error: null };
+      },
+      eq: (column: string, value: any) => ({
+        single: async (): Promise<TableData<T>> => {
+          const data = this.getTableData(table);
+          const filtered = Array.isArray(data) 
+            ? data.find(item => (item as any)[column] === value)
+            : null;
+          return { data: filtered as T, error: null };
+        }
+      })
+    }),
+    insert: async (data: Partial<T>): Promise<TableData<T>> => {
+      const tableData = this.getTableData(table);
+      const newItem = {
+        ...data,
+        id: uuidv4(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      if (Array.isArray(tableData)) {
+        tableData.push(newItem as any);
+      }
+      
+      return { data: newItem as T, error: null };
+    },
+    update: async (data: Partial<T>): Promise<TableData<T>> => {
+      const tableData = this.getTableData(table);
+      if (Array.isArray(tableData)) {
+        const index = tableData.findIndex(item => (item as any).id === (data as any).id);
+        if (index !== -1) {
+          tableData[index] = { ...tableData[index], ...data, updated_at: new Date().toISOString() };
+          return { data: tableData[index] as T, error: null };
+        }
+      }
+      return { data: null, error: new Error('Item not found') };
+    },
+    delete: async (): Promise<TableData<void>> => {
+      return { data: null, error: null };
+    }
+  });
+
+  private getTableData(table: string): any[] {
+    switch (table) {
+      case 'posts':
+        return this.posts;
+      case 'profiles':
+        return this.profiles;
+      case 'likes':
+        return this.likes;
+      case 'comments':
+        return this.comments;
+      case 'messages':
+        return this.messages;
+      case 'notifications':
+        return this.notifications;
+      case 'user_roles':
+        return this.userRoles;
+      default:
+        return [];
+    }
   }
 
-  // Posts methods
-  async getPosts() {
-    return {
-      data: this.posts.map(post => ({
-        ...post,
-        profiles: this.profiles.find(p => p.id === post.author_id) || {
-          username: 'Unknown',
-          avatar_url: null
-        },
-        likes: [{ count: this.likes.filter(l => l.post_id === post.id).length }],
-        comments: [{ count: this.comments.filter(c => c.post_id === post.id).length }]
-      })),
-      error: null
-    };
-  }
-
-  async createPost(post: Partial<Post>) {
-    const newPost: Post = {
-      id: crypto.randomUUID(),
-      content: post.content || '',
-      author_id: post.author_id || this.users[0].id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_academy_post: post.is_academy_post || false
-    };
-    this.posts.unshift(newPost);
-    return { data: newPost, error: null };
-  }
-
-  // Likes methods
-  async getLikes(postId: string) {
-    return {
-      data: this.likes.filter(like => like.post_id === postId),
-      error: null
-    };
-  }
-
-  async createLike(like: Partial<Like>) {
-    const newLike: Like = {
-      id: crypto.randomUUID(),
-      post_id: like.post_id!,
-      user_id: like.user_id || this.users[0].id,
-      created_at: new Date().toISOString()
-    };
-    this.likes.push(newLike);
-    return { data: newLike, error: null };
-  }
-
-  // Comments methods
-  async getComments(postId: string) {
-    return {
-      data: this.comments.filter(comment => comment.post_id === postId),
-      error: null
-    };
-  }
-
-  async createComment(comment: Partial<Comment>) {
-    const newComment: Comment = {
-      id: crypto.randomUUID(),
-      content: comment.content || '',
-      post_id: comment.post_id!,
-      author_id: comment.author_id || this.users[0].id,
-      parent_id: comment.parent_id || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    this.comments.push(newComment);
-    return { data: newComment, error: null };
-  }
-
-  // Helper method to seed initial data
-  seedData() {
+  private seedData() {
     // Add mock profiles for test users
     this.users.forEach(user => {
       this.profiles.push({
@@ -149,13 +169,15 @@ class MockDatabase {
     });
 
     // Add some mock posts
-    this.createPost({
+    this.posts.push({
+      id: uuidv4(),
       content: 'Welcome to Rocket Football Academy! 🚀⚽',
       author_id: this.users[0].id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       is_academy_post: true
     });
   }
 }
 
 export const mockDb = new MockDatabase();
-mockDb.seedData();

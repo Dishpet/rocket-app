@@ -1,7 +1,9 @@
 import { Database } from "@/integrations/supabase/types";
+import { PostgrestError, User } from "@supabase/supabase-js";
 
 export type Tables = Database['public']['Tables'];
 export type TableName = keyof Tables;
+
 export type Profile = Tables['profiles']['Row'];
 export type Post = Tables['posts']['Row'];
 export type Like = Tables['likes']['Row'];
@@ -18,33 +20,32 @@ export type LocalUser = {
 
 export type QueryResult<T> = {
   data: T | null;
-  error: Error | null;
+  error: PostgrestError | null;
 };
 
-export type QueryOptions = {
-  eq?: Record<string, any>;
-  order?: Record<string, 'asc' | 'desc'>;
+export type TableData<T> = {
+  data: T | null;
+  error: Error | null;
 };
 
 export interface DatabaseClient {
   auth: {
-    getSession: () => Promise<{ data: { session: { user: LocalUser } | null }, error: Error | null }>;
-    signUp: (credentials: { email: string; password: string; options?: any }) => Promise<QueryResult<{ user: LocalUser }>>;
-    signInWithPassword: (credentials: { email: string; password: string }) => Promise<QueryResult<{ user: LocalUser }>>;
+    getSession: () => Promise<{ data: { session: { user: User | LocalUser } | null }; error: Error | null }>;
+    signInWithPassword: (credentials: { email: string; password: string }) => Promise<{ data: { user: User | LocalUser } | null; error: Error | null }>;
     signOut: () => Promise<{ error: Error | null }>;
-    onAuthStateChange: (callback: (event: string, session: { user: LocalUser } | null) => void) => { 
+    onAuthStateChange: (callback: (event: string, session: { user: User | LocalUser } | null) => void) => { 
       data: { subscription: { unsubscribe: () => void } }
     };
   };
-  from: <T>(table: TableName) => {
+  from: <T extends Tables[TableName]["Row"]>(table: TableName) => {
     select: (query?: string) => {
-      single: () => Promise<QueryResult<T>>;
+      single: () => Promise<TableData<T>>;
       eq: (column: string, value: any) => {
-        single: () => Promise<QueryResult<T>>;
+        single: () => Promise<TableData<T>>;
       };
     };
-    insert: (data: Partial<T>) => Promise<QueryResult<T>>;
-    update: (data: Partial<T>) => Promise<QueryResult<T>>;
-    delete: () => Promise<QueryResult<void>>;
+    insert: (data: Partial<T>) => Promise<TableData<T>>;
+    update: (data: Partial<T>) => Promise<TableData<T>>;
+    delete: () => Promise<TableData<void>>;
   };
 }
