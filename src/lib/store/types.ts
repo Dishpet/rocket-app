@@ -35,13 +35,15 @@ export interface DatabaseClient {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
-  from: <T = any>(table: string) => {
-    select: (query?: string) => Promise<QueryResult<T[]>>;
-    single: () => Promise<QueryResult<T>>;
+  from: <T>(table: string) => {
+    select: (query?: string) => {
+      single: () => Promise<QueryResult<T>>;
+      eq: (column: string, value: any) => {
+        single: () => Promise<QueryResult<T>>;
+      };
+    };
     insert: (data: Partial<T>) => Promise<QueryResult<T>>;
     update: (data: Partial<T>) => Promise<QueryResult<T>>;
     delete: () => Promise<QueryResult<void>>;
-    eq: (column: string, value: any) => any;
-    order: (column: string, options: { ascending: boolean }) => any;
   };
 }

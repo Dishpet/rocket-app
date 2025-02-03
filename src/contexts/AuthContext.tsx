@@ -23,7 +23,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      const { data, error } = await db.from<Profile>("profiles").select("*").eq("id", userId).single();
+      const { data, error } = await db.from<Profile>("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
       
       if (error) {
         console.error("Error fetching profile:", error);
@@ -42,7 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener
     const { data: { subscription } } = db.auth.onAuthStateChange(
       async (_event, session) => {
         console.log("Auth state changed:", _event, session ? "logged in" : "logged out");
@@ -60,7 +62,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Initial session check
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await db.auth.getSession();
