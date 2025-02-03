@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, QueryResult, DatabaseClient, TableName } from './types';
+import { LocalUser, Profile, Post, Like, Comment, Message, Notification, UserRole, TableData, DatabaseClient, TableName, Tables } from './types';
 import { mockDb } from '../mockDb';
 
 type StoreState = {
@@ -36,45 +36,24 @@ const useLocalStore = (): DatabaseClient => {
   return {
     auth: {
       getSession: async () => {
-        const { data } = await mockDb.getUser();
+        const currentUser = useStore.getState().currentUser;
         return { 
-          data: { session: data.user ? { user: data.user as LocalUser } : null },
+          data: { session: currentUser ? { user: currentUser } : null },
           error: null 
         };
       },
       signInWithPassword: async ({ email, password }) => {
         console.log('Attempting login with:', email);
-        const { data, error } = await mockDb.signInWithPassword({ email, password });
-        
-        if (error) {
-          console.error('Login error:', error);
-          return { data: null, error };
-        }
-
-        if (!data?.user) {
-          console.error('No user data returned');
+        // Use mockDb's authentication logic
+        const user = mockDb.auth.signInWithPassword({ email, password });
+        if (!user) {
           return { 
             data: null, 
             error: new Error('Invalid login credentials') 
           };
         }
-
-        useStore.setState({ currentUser: data.user as LocalUser });
-        return { data: { user: data.user as LocalUser }, error: null };
-      },
-      signUp: async ({ email, password }) => {
-        try {
-          const userId = uuidv4();
-          const newUser: LocalUser = {
-            id: userId,
-            email,
-            created_at: new Date().toISOString(),
-          };
-          useStore.setState({ currentUser: newUser });
-          return { data: { user: newUser }, error: null };
-        } catch (error) {
-          return { data: null, error: error as Error };
-        }
+        useStore.setState({ currentUser: user as LocalUser });
+        return { data: { user: user as LocalUser }, error: null };
       },
       signOut: async () => {
         try {
@@ -96,7 +75,7 @@ const useLocalStore = (): DatabaseClient => {
         };
       },
     },
-    from: <T>(table: TableName) => ({
+    from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
           try {

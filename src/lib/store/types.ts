@@ -4,14 +4,6 @@ import { PostgrestError, User } from "@supabase/supabase-js";
 export type Tables = Database['public']['Tables'];
 export type TableName = keyof Tables;
 
-export type Profile = Tables['profiles']['Row'];
-export type Post = Tables['posts']['Row'];
-export type Like = Tables['likes']['Row'];
-export type Comment = Tables['comments']['Row'];
-export type Message = Tables['messages']['Row'];
-export type Notification = Tables['notifications']['Row'];
-export type UserRole = Tables['user_roles']['Row'];
-
 export type LocalUser = {
   id: string;
   email: string;
@@ -28,7 +20,7 @@ export interface DatabaseClient {
     getSession: () => Promise<{ data: { session: { user: User | LocalUser } | null }; error: Error | null }>;
     signInWithPassword: (credentials: { email: string; password: string }) => Promise<{ data: { user: User | LocalUser } | null; error: Error | null }>;
     signOut: () => Promise<{ error: Error | null }>;
-    onAuthStateChange: (callback: (event: string, session: { user: User | LocalUser } | null) => void) => { 
+    onAuthStateChange: (callback: (event: string, session: { user: User | LocalUser } | null) => void) => {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
