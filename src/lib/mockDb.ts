@@ -17,6 +17,7 @@ class MockDatabase implements DatabaseClient {
   private messages: Message[] = [];
   private notifications: Notification[] = [];
   private userRoles: UserRole[] = [];
+  private mediaStorage: Record<string, string> = {};
   
   private users = [
     {
@@ -42,6 +43,29 @@ class MockDatabase implements DatabaseClient {
   constructor() {
     this.seedData();
   }
+
+  storage = {
+    from: (bucket: string) => ({
+      upload: async (path: string, file: File) => {
+        try {
+          const reader = new FileReader();
+          const promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(file);
+          const dataUrl = await promise;
+          this.mediaStorage[path] = dataUrl;
+          return { error: null };
+        } catch (error) {
+          return { error: error as Error };
+        }
+      },
+      getPublicUrl: (path: string) => ({
+        data: { publicUrl: this.mediaStorage[path] || '' }
+      })
+    })
+  };
 
   auth = {
     getSession: async () => {

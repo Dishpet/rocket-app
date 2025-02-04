@@ -86,9 +86,33 @@ const useLocalStore = (): DatabaseClient => {
         };
       },
     },
+    storage: {
+      from: (bucket: string) => ({
+        upload: async (path: string, file: File, options?: { upsert: boolean }) => {
+          try {
+            const reader = new FileReader();
+            const promise = new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+            });
+            reader.readAsDataURL(file);
+            const dataUrl = await promise;
+            useStore.setState(state => ({
+              mediaStorage: { ...state.mediaStorage, [path]: dataUrl }
+            }));
+            return { error: null };
+          } catch (error) {
+            return { error: error as Error };
+          }
+        },
+        getPublicUrl: (path: string) => ({
+          data: { publicUrl: useStore.getState().mediaStorage[path] || '' }
+        })
+      })
+    },
     from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
-        single: async () => {
+        single: async (): Promise<TableData<T>> => {
           try {
             const data = getTableData<T>(table)[0];
             return { data, error: null };
@@ -97,7 +121,7 @@ const useLocalStore = (): DatabaseClient => {
           }
         },
         eq: (column: string, value: any) => ({
-          single: async () => {
+          single: async (): Promise<TableData<T>> => {
             try {
               const data = getTableData<T>(table).find(item => (item as any)[column] === value);
               return { data: data || null, error: null };
