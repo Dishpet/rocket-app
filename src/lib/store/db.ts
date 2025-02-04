@@ -48,16 +48,9 @@ const wrapSupabase = (): DatabaseClient => {
               .select(query || '*')
               .single();
             
-            if (error) {
-              return {
-                data: null,
-                error
-              } satisfies TableData<T>;
-            }
-            
             return {
-              data: data as T,
-              error: null
+              data: data as T | null,
+              error: error
             } satisfies TableData<T>;
           } catch (error) {
             return {
@@ -71,20 +64,13 @@ const wrapSupabase = (): DatabaseClient => {
             try {
               const { data, error } = await supabase
                 .from(table)
-                .select(query || '*')
+                .select('*')
                 .eq(column, value)
                 .single();
               
-              if (error) {
-                return {
-                  data: null,
-                  error
-                } satisfies TableData<T>;
-              }
-              
               return {
-                data: data as T,
-                error: null
+                data: data as T | null,
+                error: error
               } satisfies TableData<T>;
             } catch (error) {
               return {
@@ -99,20 +85,13 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .insert(data)
+            .insert(data as any)
             .select()
             .single();
           
-          if (error) {
-            return {
-              data: null,
-              error
-            } satisfies TableData<T>;
-          }
-          
           return {
-            data: result as T,
-            error: null
+            data: result as T | null,
+            error: error
           } satisfies TableData<T>;
         } catch (error) {
           return {
@@ -125,21 +104,14 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .update(data)
+            .update(data as any)
             .eq('id', (data as any).id)
             .select()
             .single();
           
-          if (error) {
-            return {
-              data: null,
-              error
-            } satisfies TableData<T>;
-          }
-          
           return {
-            data: result as T,
-            error: null
+            data: result as T | null,
+            error: error
           } satisfies TableData<T>;
         } catch (error) {
           return {
@@ -153,7 +125,7 @@ const wrapSupabase = (): DatabaseClient => {
           const { error } = await supabase.from(table).delete();
           return {
             data: null,
-            error: error ? new Error(error.message) : null
+            error: error
           } satisfies TableData<void>;
         } catch (error) {
           return {

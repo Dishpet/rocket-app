@@ -33,6 +33,12 @@ export interface DatabaseClient {
       data: { subscription: { unsubscribe: () => void } }
     };
   };
+  storage: {
+    from: (bucket: string) => {
+      upload: (path: string, file: File, options?: { upsert: boolean }) => Promise<{ error: Error | null }>;
+      getPublicUrl: (path: string) => { data: { publicUrl: string } };
+    };
+  };
   from: <T extends Tables[TableName]["Row"]>(table: TableName) => {
     select: (query?: string) => {
       single: () => Promise<TableData<T>>;
