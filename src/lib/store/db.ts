@@ -29,7 +29,7 @@ const wrapSupabase = (): DatabaseClient => {
     },
     from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
-        single: async (): Promise<TableData<T>> => {
+        single: async () => {
           try {
             const { data, error } = await supabase
               .from(table)
@@ -37,16 +37,19 @@ const wrapSupabase = (): DatabaseClient => {
               .single();
             
             if (error) {
-              return { data: null, error: new Error(error.message) };
+              return { data: null, error: new Error(error.message) } as TableData<T>;
             }
             
-            return { data: data as T, error: null };
+            return { data: data as T, error: null } as TableData<T>;
           } catch (error) {
-            return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+            return { 
+              data: null, 
+              error: error instanceof Error ? error : new Error('Unknown error') 
+            } as TableData<T>;
           }
         },
         eq: (column: string, value: any) => ({
-          single: async (): Promise<TableData<T>> => {
+          single: async () => {
             try {
               const { data, error } = await supabase
                 .from(table)
@@ -55,17 +58,20 @@ const wrapSupabase = (): DatabaseClient => {
                 .single();
               
               if (error) {
-                return { data: null, error: new Error(error.message) };
+                return { data: null, error: new Error(error.message) } as TableData<T>;
               }
               
-              return { data: data as T, error: null };
+              return { data: data as T, error: null } as TableData<T>;
             } catch (error) {
-              return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+              return { 
+                data: null, 
+                error: error instanceof Error ? error : new Error('Unknown error') 
+              } as TableData<T>;
             }
           }
         })
       }),
-      insert: async (data: Partial<T>): Promise<TableData<T>> => {
+      insert: async (data: Partial<T>) => {
         try {
           const { data: result, error } = await supabase
             .from(table)
@@ -74,15 +80,18 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            return { data: null, error: new Error(error.message) };
+            return { data: null, error: new Error(error.message) } as TableData<T>;
           }
           
-          return { data: result as T, error: null };
+          return { data: result as T, error: null } as TableData<T>;
         } catch (error) {
-          return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+          return { 
+            data: null, 
+            error: error instanceof Error ? error : new Error('Unknown error') 
+          } as TableData<T>;
         }
       },
-      update: async (data: Partial<T>): Promise<TableData<T>> => {
+      update: async (data: Partial<T>) => {
         try {
           const { data: result, error } = await supabase
             .from(table)
@@ -92,20 +101,29 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            return { data: null, error: new Error(error.message) };
+            return { data: null, error: new Error(error.message) } as TableData<T>;
           }
           
-          return { data: result as T, error: null };
+          return { data: result as T, error: null } as TableData<T>;
         } catch (error) {
-          return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+          return { 
+            data: null, 
+            error: error instanceof Error ? error : new Error('Unknown error') 
+          } as TableData<T>;
         }
       },
-      delete: async (): Promise<TableData<void>> => {
+      delete: async () => {
         try {
           const { error } = await supabase.from(table).delete();
-          return { data: null, error: error ? new Error(error.message) : null };
+          return { 
+            data: null, 
+            error: error ? new Error(error.message) : null 
+          } as TableData<void>;
         } catch (error) {
-          return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+          return { 
+            data: null, 
+            error: error instanceof Error ? error : new Error('Unknown error') 
+          } as TableData<void>;
         }
       }
     })
