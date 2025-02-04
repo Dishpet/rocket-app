@@ -37,15 +37,21 @@ const wrapSupabase = (): DatabaseClient => {
               .single();
             
             if (error) {
-              return { data: null, error: new Error(error.message) } as TableData<T>;
+              return { 
+                data: null, 
+                error: new Error(error.message) 
+              } satisfies TableData<T>;
             }
             
-            return { data: data as T, error: null } as TableData<T>;
+            return { 
+              data: data as T, 
+              error: null 
+            } satisfies TableData<T>;
           } catch (error) {
             return { 
               data: null, 
               error: error instanceof Error ? error : new Error('Unknown error') 
-            } as TableData<T>;
+            } satisfies TableData<T>;
           }
         },
         eq: (column: string, value: any) => ({
@@ -58,15 +64,21 @@ const wrapSupabase = (): DatabaseClient => {
                 .single();
               
               if (error) {
-                return { data: null, error: new Error(error.message) } as TableData<T>;
+                return { 
+                  data: null, 
+                  error: new Error(error.message) 
+                } satisfies TableData<T>;
               }
               
-              return { data: data as T, error: null } as TableData<T>;
+              return { 
+                data: data as T, 
+                error: null 
+              } satisfies TableData<T>;
             } catch (error) {
               return { 
                 data: null, 
                 error: error instanceof Error ? error : new Error('Unknown error') 
-              } as TableData<T>;
+              } satisfies TableData<T>;
             }
           }
         })
@@ -80,15 +92,21 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            return { data: null, error: new Error(error.message) } as TableData<T>;
+            return { 
+              data: null, 
+              error: new Error(error.message) 
+            } satisfies TableData<T>;
           }
           
-          return { data: result as T, error: null } as TableData<T>;
+          return { 
+            data: result as T, 
+            error: null 
+          } satisfies TableData<T>;
         } catch (error) {
           return { 
             data: null, 
             error: error instanceof Error ? error : new Error('Unknown error') 
-          } as TableData<T>;
+          } satisfies TableData<T>;
         }
       },
       update: async (data: Partial<T>) => {
@@ -101,15 +119,21 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            return { data: null, error: new Error(error.message) } as TableData<T>;
+            return { 
+              data: null, 
+              error: new Error(error.message) 
+            } satisfies TableData<T>;
           }
           
-          return { data: result as T, error: null } as TableData<T>;
+          return { 
+            data: result as T, 
+            error: null 
+          } satisfies TableData<T>;
         } catch (error) {
           return { 
             data: null, 
             error: error instanceof Error ? error : new Error('Unknown error') 
-          } as TableData<T>;
+          } satisfies TableData<T>;
         }
       },
       delete: async () => {
@@ -118,12 +142,12 @@ const wrapSupabase = (): DatabaseClient => {
           return { 
             data: null, 
             error: error ? new Error(error.message) : null 
-          } as TableData<void>;
+          } satisfies TableData<void>;
         } catch (error) {
           return { 
             data: null, 
             error: error instanceof Error ? error : new Error('Unknown error') 
-          } as TableData<void>;
+          } satisfies TableData<void>;
         }
       }
     })
