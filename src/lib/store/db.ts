@@ -84,7 +84,7 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .insert(data as any)
+            .insert([data as any])
             .select()
             .single();
           
