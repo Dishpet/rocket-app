@@ -54,7 +54,7 @@ const wrapSupabase = (): DatabaseClient => {
           } catch (error) {
             return {
               data: null,
-              error: error as Error
+              error: error instanceof Error ? error : new Error('Unknown error')
             };
           }
         },
@@ -74,7 +74,7 @@ const wrapSupabase = (): DatabaseClient => {
             } catch (error) {
               return {
                 data: null,
-                error: error as Error
+                error: error instanceof Error ? error : new Error('Unknown error')
               };
             }
           }
@@ -95,7 +95,7 @@ const wrapSupabase = (): DatabaseClient => {
         } catch (error) {
           return {
             data: null,
-            error: error as Error
+            error: error instanceof Error ? error : new Error('Unknown error')
           };
         }
       },
@@ -115,7 +115,7 @@ const wrapSupabase = (): DatabaseClient => {
         } catch (error) {
           return {
             data: null,
-            error: error as Error
+            error: error instanceof Error ? error : new Error('Unknown error')
           };
         }
       },
@@ -129,7 +129,7 @@ const wrapSupabase = (): DatabaseClient => {
         } catch (error) {
           return {
             data: null,
-            error: error as Error
+            error: error instanceof Error ? error : new Error('Unknown error')
           };
         }
       }

@@ -22,18 +22,18 @@ const Profile = () => {
     queryKey: ["profile", id || user?.id],
     queryFn: async () => {
       console.log("Fetching profile for id:", id || user?.id);
-      const { data, error } = await db
+      const result = await db
         .from("profiles")
         .select("*")
         .eq("id", id || user?.id)
         .single();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
+      if (result.error) {
+        console.error("Error fetching profile:", result.error);
+        throw result.error;
       }
 
-      if (!data) {
+      if (!result.data) {
         console.log("No profile found, creating one...");
         // If no profile exists and it's the current user, create one
         if (!id || id === user?.id) {
@@ -44,19 +44,18 @@ const Profile = () => {
             avatar_url: null,
           };
 
-          const { data: createdProfile, error: createError } = await db
+          const createResult = await db
             .from("profiles")
             .insert(newProfile)
-            .select()
             .single();
 
-          if (createError) throw createError;
-          return createdProfile;
+          if (createResult.error) throw createResult.error;
+          return createResult.data;
         }
         throw new Error("Profile not found");
       }
 
-      return data;
+      return result.data;
     },
     meta: {
       onSettled: (data, error) => {

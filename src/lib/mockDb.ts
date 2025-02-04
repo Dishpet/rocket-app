@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseClient, LocalUser, TableData } from "./store/types";
 import { localStore } from "./store/localStore";
 
@@ -32,7 +33,7 @@ export class MockDatabase implements DatabaseClient {
 
   storage = {
     from: (bucket: string) => ({
-      upload: async (path: string, file: File) => {
+      upload: async (path: string, file: File, options?: { upsert: boolean }): Promise<{ error: Error | null }> => {
         const reader = new FileReader();
         return new Promise((resolve) => {
           reader.onloadend = () => {
