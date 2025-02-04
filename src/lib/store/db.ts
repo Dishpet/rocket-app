@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { mockDb } from "@/lib/mockDb";
 import { DatabaseClient, TableName, Tables, TableData } from "./types";
 
-// Set this to true to use local storage instead of Supabase
 const USE_LOCAL_STORAGE = false;
 
 const wrapSupabase = (): DatabaseClient => {
@@ -85,7 +84,7 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .insert(data)
+            .insert(data as any)
             .select()
             .single();
           
@@ -104,7 +103,7 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .update(data)
+            .update(data as any)
             .eq('id', (data as any).id)
             .select()
             .single();
