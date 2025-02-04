@@ -37,24 +37,21 @@ const wrapSupabase = (): DatabaseClient => {
               .single();
             
             if (error) {
-              const result: TableData<T> = {
+              return {
                 data: null,
                 error: new Error(error.message)
-              };
-              return result;
+              } satisfies TableData<T>;
             }
             
-            const result: TableData<T> = {
+            return {
               data: data as T,
               error: null
-            };
-            return result;
+            } satisfies TableData<T>;
           } catch (error) {
-            const result: TableData<T> = {
+            return {
               data: null,
               error: error instanceof Error ? error : new Error('Unknown error')
-            };
-            return result;
+            } satisfies TableData<T>;
           }
         },
         eq: (column: string, value: any) => ({
@@ -67,24 +64,21 @@ const wrapSupabase = (): DatabaseClient => {
                 .single();
               
               if (error) {
-                const result: TableData<T> = {
+                return {
                   data: null,
                   error: new Error(error.message)
-                };
-                return result;
+                } satisfies TableData<T>;
               }
               
-              const result: TableData<T> = {
+              return {
                 data: data as T,
                 error: null
-              };
-              return result;
+              } satisfies TableData<T>;
             } catch (error) {
-              const result: TableData<T> = {
+              return {
                 data: null,
                 error: error instanceof Error ? error : new Error('Unknown error')
-              };
-              return result;
+              } satisfies TableData<T>;
             }
           }
         })
@@ -98,24 +92,21 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            const errorResult: TableData<T> = {
+            return {
               data: null,
               error: new Error(error.message)
-            };
-            return errorResult;
+            } satisfies TableData<T>;
           }
           
-          const successResult: TableData<T> = {
+          return {
             data: result as T,
             error: null
-          };
-          return successResult;
+          } satisfies TableData<T>;
         } catch (error) {
-          const errorResult: TableData<T> = {
+          return {
             data: null,
             error: error instanceof Error ? error : new Error('Unknown error')
-          };
-          return errorResult;
+          } satisfies TableData<T>;
         }
       },
       update: async (data: Partial<T>) => {
@@ -128,40 +119,35 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            const errorResult: TableData<T> = {
+            return {
               data: null,
               error: new Error(error.message)
-            };
-            return errorResult;
+            } satisfies TableData<T>;
           }
           
-          const successResult: TableData<T> = {
+          return {
             data: result as T,
             error: null
-          };
-          return successResult;
+          } satisfies TableData<T>;
         } catch (error) {
-          const errorResult: TableData<T> = {
+          return {
             data: null,
             error: error instanceof Error ? error : new Error('Unknown error')
-          };
-          return errorResult;
+          } satisfies TableData<T>;
         }
       },
       delete: async () => {
         try {
           const { error } = await supabase.from(table).delete();
-          const result: TableData<void> = {
+          return {
             data: null,
             error: error ? new Error(error.message) : null
-          };
-          return result;
+          } satisfies TableData<void>;
         } catch (error) {
-          const result: TableData<void> = {
+          return {
             data: null,
             error: error instanceof Error ? error : new Error('Unknown error')
-          };
-          return result;
+          } satisfies TableData<void>;
         }
       }
     })
