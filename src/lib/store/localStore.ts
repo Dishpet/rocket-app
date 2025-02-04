@@ -43,17 +43,28 @@ const useLocalStore = (): DatabaseClient => {
         };
       },
       signInWithPassword: async ({ email, password }) => {
-        console.log('Attempting login with:', email);
-        // Use mockDb's authentication logic
-        const user = mockDb.auth.signInWithPassword({ email, password });
-        if (!user) {
-          return { 
-            data: null, 
-            error: new Error('Invalid login credentials') 
+        try {
+          console.log('Attempting login with:', email);
+          const result = await mockDb.auth.signInWithPassword({ email, password });
+          
+          if (result.error || !result.data?.user) {
+            return { 
+              data: null, 
+              error: new Error('Invalid login credentials') 
+            };
+          }
+
+          const user: LocalUser = {
+            id: result.data.user.id,
+            email: result.data.user.email,
+            created_at: result.data.user.created_at
           };
+
+          useStore.setState({ currentUser: user });
+          return { data: { user }, error: null };
+        } catch (error) {
+          return { data: null, error: error as Error };
         }
-        useStore.setState({ currentUser: user as LocalUser });
-        return { data: { user: user as LocalUser }, error: null };
       },
       signOut: async () => {
         try {
