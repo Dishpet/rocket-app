@@ -59,7 +59,7 @@ const wrapSupabase = (): DatabaseClient => {
             try {
               const { data, error } = await supabase
                 .from(table)
-                .select('*')
+                .select(query || '*')
                 .eq(column, value)
                 .single();
               
