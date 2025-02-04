@@ -36,7 +36,7 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           if (error) {
-            return { data: null, error };
+            return { data: null, error: new Error(error.message) };
           }
           
           return { data: data as T, error: null };
@@ -50,7 +50,7 @@ const wrapSupabase = (): DatabaseClient => {
               .single();
             
             if (error) {
-              return { data: null, error };
+              return { data: null, error: new Error(error.message) };
             }
             
             return { data: data as T, error: null };
@@ -65,7 +65,7 @@ const wrapSupabase = (): DatabaseClient => {
           .single();
         
         if (error) {
-          return { data: null, error };
+          return { data: null, error: new Error(error.message) };
         }
         
         return { data: result as T, error: null };
@@ -79,14 +79,14 @@ const wrapSupabase = (): DatabaseClient => {
           .single();
         
         if (error) {
-          return { data: null, error };
+          return { data: null, error: new Error(error.message) };
         }
         
         return { data: result as T, error: null };
       },
       delete: async () => {
         const { error } = await supabase.from(table).delete();
-        return { data: null, error };
+        return { data: null, error: error ? new Error(error.message) : null };
       }
     })
   };
