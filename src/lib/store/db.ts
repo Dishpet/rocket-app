@@ -40,22 +40,22 @@ const wrapSupabase = (): DatabaseClient => {
       })
     },
     from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
-      select: (query?: string) => ({
+      select: (query = '*') => ({
         single: async (): Promise<TableData<T>> => {
           try {
             const { data, error } = await supabase
               .from(table)
-              .select(query || '*')
+              .select(query)
               .single();
             
             return {
-              data: data as T | null,
+              data: data as T,
               error: error
             };
           } catch (error) {
             return {
               data: null,
-              error: error instanceof Error ? error : new Error('Unknown error')
+              error: error as Error
             };
           }
         },
@@ -69,13 +69,13 @@ const wrapSupabase = (): DatabaseClient => {
                 .single();
               
               return {
-                data: data as T | null,
+                data: data as T,
                 error: error
               };
             } catch (error) {
               return {
                 data: null,
-                error: error instanceof Error ? error : new Error('Unknown error')
+                error: error as Error
               };
             }
           }
@@ -85,18 +85,18 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .insert(data as any)
+            .insert(data)
             .select()
             .single();
           
           return {
-            data: result as T | null,
+            data: result as T,
             error: error
           };
         } catch (error) {
           return {
             data: null,
-            error: error instanceof Error ? error : new Error('Unknown error')
+            error: error as Error
           };
         }
       },
@@ -104,19 +104,19 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .update(data as any)
+            .update(data)
             .eq('id', (data as any).id)
             .select()
             .single();
           
           return {
-            data: result as T | null,
+            data: result as T,
             error: error
           };
         } catch (error) {
           return {
             data: null,
-            error: error instanceof Error ? error : new Error('Unknown error')
+            error: error as Error
           };
         }
       },
@@ -130,7 +130,7 @@ const wrapSupabase = (): DatabaseClient => {
         } catch (error) {
           return {
             data: null,
-            error: error instanceof Error ? error : new Error('Unknown error')
+            error: error as Error
           };
         }
       }
