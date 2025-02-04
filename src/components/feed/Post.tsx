@@ -11,7 +11,7 @@ interface PostProps {
 
 const Post = ({ author, content, timestamp, likes, comments }: PostProps) => {
   return (
-    <div className="bg-rfa-gray/50 backdrop-blur-lg border border-rfa-gray-light rounded-lg p-4 mb-4">
+    <div className="bg-rfa-gray/50 backdrop-blur-lg border border-rfa-gray-light rounded-lg p-4 mb-4 animate-fade-in">
       <div className="flex items-center gap-3 mb-4">
         <Avatar>
           <AvatarImage src="/placeholder.svg" />
