@@ -65,8 +65,6 @@ const Profile = () => {
     }
   });
 
-  console.log("Render state:", { isLoading, error, profile });
-
   const handleUpdateProfile = async () => {
     try {
       const { error } = await supabase
