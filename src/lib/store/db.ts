@@ -48,7 +48,7 @@ const wrapSupabase = (): DatabaseClient => {
               .single();
             
             return {
-              data: data as T,
+              data: data as T | null,
               error: error
             };
           } catch (error) {
@@ -68,7 +68,7 @@ const wrapSupabase = (): DatabaseClient => {
                 .single();
               
               return {
-                data: data as T,
+                data: data as T | null,
                 error: error
               };
             } catch (error) {
@@ -89,7 +89,7 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           return {
-            data: result as T,
+            data: result as T | null,
             error: error
           };
         } catch (error) {
@@ -109,7 +109,7 @@ const wrapSupabase = (): DatabaseClient => {
             .single();
           
           return {
-            data: result as T,
+            data: result as T | null,
             error: error
           };
         } catch (error) {

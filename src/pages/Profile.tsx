@@ -22,9 +22,9 @@ const Profile = () => {
     queryKey: ["profile", id || user?.id],
     queryFn: async () => {
       console.log("Fetching profile for id:", id || user?.id);
-      const result = await db
-        .from("profiles")
-        .select("*")
+      const profileQuery = db.from("profiles");
+      const result = await profileQuery
+        .select()
         .eq("id", id || user?.id)
         .single();
 
@@ -35,7 +35,6 @@ const Profile = () => {
 
       if (!result.data) {
         console.log("No profile found, creating one...");
-        // If no profile exists and it's the current user, create one
         if (!id || id === user?.id) {
           const newProfile = {
             id: user?.id,
