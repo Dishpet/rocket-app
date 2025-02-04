@@ -84,7 +84,7 @@ const wrapSupabase = (): DatabaseClient => {
         
         return { data: result as T, error: null };
       },
-      delete: async () => {
+      delete: async (): Promise<TableData<void>> => {
         const { error } = await supabase.from(table).delete();
         return { data: null, error: error ? new Error(error.message) : null };
       }
