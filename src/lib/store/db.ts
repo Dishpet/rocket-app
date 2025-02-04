@@ -3,7 +3,7 @@ import { mockDb } from "@/lib/mockDb";
 import { DatabaseClient, TableName, Tables, TableData } from "./types";
 
 // Set this to true to use local storage instead of Supabase
-const USE_LOCAL_STORAGE = true;
+const USE_LOCAL_STORAGE = false;
 
 const wrapSupabase = (): DatabaseClient => {
   return {
@@ -27,6 +27,18 @@ const wrapSupabase = (): DatabaseClient => {
         return { data: { subscription } };
       }
     },
+    storage: {
+      from: (bucket: string) => ({
+        upload: async (path: string, file: File, options?: { upsert: boolean }) => {
+          const { error } = await supabase.storage.from(bucket).upload(path, file, options);
+          return { error };
+        },
+        getPublicUrl: (path: string) => {
+          const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+          return { data };
+        }
+      })
+    },
     from: <T extends Tables[TableName]["Row"]>(table: TableName) => ({
       select: (query?: string) => ({
         single: async () => {
@@ -39,7 +51,7 @@ const wrapSupabase = (): DatabaseClient => {
             if (error) {
               return {
                 data: null,
-                error: new Error(error.message)
+                error
               } satisfies TableData<T>;
             }
             
@@ -66,7 +78,7 @@ const wrapSupabase = (): DatabaseClient => {
               if (error) {
                 return {
                   data: null,
-                  error: new Error(error.message)
+                  error
                 } satisfies TableData<T>;
               }
               
@@ -87,14 +99,14 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .insert(data as any)
+            .insert(data)
             .select()
             .single();
           
           if (error) {
             return {
               data: null,
-              error: new Error(error.message)
+              error
             } satisfies TableData<T>;
           }
           
@@ -113,7 +125,7 @@ const wrapSupabase = (): DatabaseClient => {
         try {
           const { data: result, error } = await supabase
             .from(table)
-            .update(data as any)
+            .update(data)
             .eq('id', (data as any).id)
             .select()
             .single();
@@ -121,7 +133,7 @@ const wrapSupabase = (): DatabaseClient => {
           if (error) {
             return {
               data: null,
-              error: new Error(error.message)
+              error
             } satisfies TableData<T>;
           }
           

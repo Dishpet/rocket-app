@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/store/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -18,34 +18,45 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const { toast } = useToast();
 
-  console.log("Profile component rendering with id:", id);
-  console.log("Current user profile:", currentUserProfile);
-
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", id || user?.id],
     queryFn: async () => {
-      try {
-        console.log("Fetching profile for id:", id || user?.id);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", id || user?.id)
-          .maybeSingle();
+      console.log("Fetching profile for id:", id || user?.id);
+      const { data, error } = await db
+        .from("profiles")
+        .select("*")
+        .eq("id", id || user?.id)
+        .single();
 
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-
-        console.log("Profile data fetched:", data);
-        if (!data) {
-          throw new Error("Profile not found");
-        }
-        return data;
-      } catch (error) {
-        console.error("Error in query function:", error);
+      if (error) {
+        console.error("Error fetching profile:", error);
         throw error;
       }
+
+      if (!data) {
+        console.log("No profile found, creating one...");
+        // If no profile exists and it's the current user, create one
+        if (!id || id === user?.id) {
+          const newProfile = {
+            id: user?.id,
+            username: user?.email?.split("@")[0] || "user",
+            full_name: "",
+            avatar_url: null,
+          };
+
+          const { data: createdProfile, error: createError } = await db
+            .from("profiles")
+            .insert(newProfile)
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          return createdProfile;
+        }
+        throw new Error("Profile not found");
+      }
+
+      return data;
     },
     meta: {
       onSettled: (data, error) => {
@@ -67,7 +78,7 @@ const Profile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("profiles")
         .update({
           username,
@@ -102,17 +113,17 @@ const Profile = () => {
       const fileExt = file.name.split(".").pop();
       const filePath = `${user?.id}/avatar.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await db.storage
         .from("media")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from("media")
         .getPublicUrl(filePath);
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("profiles")
         .update({ avatar_url: publicUrl })
         .eq("id", user?.id);
@@ -144,13 +155,11 @@ const Profile = () => {
     );
   }
 
-  if (error || !profile) {
+  if (!profile) {
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-          <p className="text-lg text-red-500">
-            {error instanceof Error ? error.message : "Failed to load profile"}
-          </p>
+          <p className="text-lg text-red-500">Profile not found</p>
           <Button 
             onClick={() => window.location.reload()}
             variant="destructive"
