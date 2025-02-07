@@ -22,7 +22,11 @@ const Profile = () => {
     queryKey: ["profile", id || user?.id],
     queryFn: async () => {
       console.log("Fetching profile for id:", id || user?.id);
-      const result = await db.from("profiles").select().eq("id", id || user?.id).single();
+      const result = await db
+        .from("profiles")
+        .select()
+        .eq("id", id || user?.id)
+        .single();
 
       if (result.error) {
         console.error("Error fetching profile:", result.error);
@@ -39,7 +43,9 @@ const Profile = () => {
             avatar_url: null,
           };
 
-          const createResult = await db.from("profiles").insert(newProfile).single();
+          const createResult = await db
+            .from("profiles")
+            .insert(newProfile);
 
           if (createResult.error) throw createResult.error;
           return createResult.data;
